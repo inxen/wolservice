@@ -1,0 +1,60 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布的已存在标签，例如 v0.6.6"
+        required: true
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Verify tag
+        run: |
+          git fetch --tags --force
+          git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null || {
+            echo "tag ${TAG} not found" >&2
+            exit 1
+          }
+
+      - name: Test
+        run: go test ./...
+
+      # WOL_EMBEDDED_KEY（64 位 hex）设置时，所有官方二进制共享同一把主密钥：
+      # 升级不会出现密钥对不上、secrets 解不开导致服务起不来，但密钥能从公开二进制里提取。
+      # 留空时 build.sh 只告警，产物回退到磁盘 wol.secrets.key 模式，每台安装各自生成密钥。
+      - name: Build
+        env:
+          WOL_EMBEDDED_KEY: ${{ secrets.WOL_EMBEDDED_KEY }}
+        run: |
+          VERSION="${TAG#v}" bash build.sh
+          (cd dist && sha256sum wol-* > checksums.txt)
+          ls -l dist
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" dist/* --clobber
+          else
+            gh release create "${TAG}" dist/* \
+              --title "${TAG}" \
+              --notes "wolservice ${TAG}：交叉编译产物（windows amd64/arm64、linux amd64/arm64/arm/mipsle、darwin amd64/arm64）与 checksums.txt。"
+          fi

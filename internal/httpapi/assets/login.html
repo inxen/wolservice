@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6fb">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="{{TITLE}}">
+  <title>{{TITLE}}</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: #f3f6fb; color: #172033;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+    .card {
+      width: min(380px, calc(100vw - 32px)); padding: 28px;
+      background: #fff; border: 1px solid #dfe6f2; border-radius: 14px;
+      box-shadow: 0 18px 50px rgba(23,32,51,.10);
+    }
+    .mark {
+      width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 16px;
+      border-radius: 12px; background: linear-gradient(135deg,#2f7cf6,#59c3ff); color: #fff;
+      font-size: 22px; font-weight: 700;
+    }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    p { margin: 0 0 18px; color: #66738a; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; }
+    input {
+      width: 100%; padding: 10px 12px; border: 1px solid #ccd6e6; border-radius: 8px;
+      background: #fbfcff; color: inherit; font: inherit;
+    }
+    button {
+      width: 100%; margin-top: 14px; padding: 10px 12px; border: 0; border-radius: 8px;
+      background: #2f7cf6; color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .error { min-height: 20px; margin: 10px 0 0; color: #c62828; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0b1220; color: #e7eefb; }
+      .card { background: #121b2d; border-color: #25324a; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+      p { color: #9aa8c2; }
+      input { background: #0e1728; border-color: #2b3a55; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark">W</div>
+    <h1>{{TITLE}}</h1>
+    <p>请输入访问密码以继续</p>
+    <form id="loginForm">
+      <label for="password">访问密码</label>
+      <input id="password" type="password" autocomplete="current-password" required autofocus>
+      <p class="error" id="error"></p>
+      <button id="submit" type="submit">继续</button>
+    </form>
+  </main>
+  <script src="/assets/login.js"></script>
+</body>
+</html>

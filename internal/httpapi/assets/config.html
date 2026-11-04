@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{TITLE}} · 配置中心</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="/assets/config.css">
+</head>
+<body class="cfg-body">
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.2.37.5.7.9.93.3.17.7.26 1.1.26H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.81Z"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7M6.5 7l.8 13a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-13M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5V3Z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.2A11 11 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.1 3.6M6.2 6.8C3.5 8.6 2 12 2 12s3.5 6 10 6a11 11 0 0 0 4.1-.8M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5"/><circle cx="12" cy="17.3" r=".9" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".9" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0-14.9-4M4 4v5h5M4 13a8.1 8.1 0 0 0 14.9 4M20 20v-5h-5"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="i-router" viewBox="0 0 24 24"><rect x="3" y="12.5" width="18" height="7" rx="2"/><path d="M6.5 16h.01M9.5 16h.01M12 3v3M8.5 6.5 7 5M15.5 6.5 17 5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l2 2M14 9l2 2"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.9-9.9A6 6 0 0 1 17.7 9 4.5 4.5 0 0 1 17 18H7Z"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.7 3.2 8 7.5 9 4.3-1 7.5-4.3 7.5-9V6L12 3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8.5 8.5 0 1 0 11.4 0"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5Z"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18Z" fill="currentColor"/></symbol>
+  </svg>
+
+  <div class="cfg-center" id="loadingScreen">
+    <div class="loader"></div>
+    <p>正在读取配置…</p>
+  </div>
+
+  <div class="login-screen" id="loginScreen" hidden>
+    <form class="login-card" id="loginForm">
+      <div class="brand-mark login-mark"><svg><use href="#i-bolt"/></svg></div>
+      <h1>配置中心</h1>
+      <p>请输入访问密码以继续</p>
+      <label class="sr-only" for="loginPassword">访问密码</label>
+      <input class="text-input" id="loginPassword" type="password" autocomplete="current-password" placeholder="访问密码" required>
+      <p class="form-error" id="loginError" hidden></p>
+      <button class="btn primary login-submit" id="loginSubmit" type="submit">进入配置</button>
+      <a href="/" class="login-back">返回快速面板</a>
+    </form>
+  </div>
+
+  <div id="configApp" hidden>
+    <header class="cfg-topbar">
+      <div class="cfg-brand">
+        <a class="brand-mark" href="/" title="返回快速面板"><svg><use href="#i-bolt"/></svg></a>
+        <div class="cfg-brand-text">
+          <h1>配置中心</h1>
+          <p id="cfgPath">加载配置文件路径…</p>
+        </div>
+      </div>
+      <div class="cfg-top-actions">
+        <button class="icon-btn" id="themeButton" type="button" title="切换主题" aria-label="切换主题">
+          <svg id="themeIcon"><use href="#i-auto"/></svg>
+        </button>
+        <button class="icon-btn" id="secretsToggle" type="button" title="显示输入内容" aria-label="显示输入内容">
+          <svg><use href="#i-eye"/></svg>
+        </button>
+        <button class="icon-btn" id="logoutButton" type="button" title="退出配置" aria-label="退出配置" hidden>
+          <svg><use href="#i-logout"/></svg>
+        </button>
+        <a class="btn ghost cfg-back-link" href="/">
+          <svg class="btn-icon"><use href="#i-back"/></svg>快速面板
+        </a>
+        <button class="btn primary" id="saveButton" type="button">
+          <svg class="btn-icon"><use href="#i-save"/></svg><span id="saveLabel">保存并应用</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="cfg-error-banner" id="saveError" hidden>
+      <svg><use href="#i-alert"/></svg>
+      <div><strong>保存失败</strong><pre id="saveErrorText"></pre></div>
+      <button class="icon-btn" id="saveErrorClose" type="button" aria-label="关闭"><svg><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="cfg-layout">
+      <aside class="cfg-nav" aria-label="配置导航">
+        <a href="#section-devices" class="cfg-nav-link is-active" data-nav="devices"><svg><use href="#i-monitor"/></svg>设备管理 <span class="nav-badge" id="deviceCount">0</span></a>
+        <a href="#section-basic" class="cfg-nav-link" data-nav="basic"><svg><use href="#i-settings"/></svg>基础设置</a>
+        <a href="#section-trust" class="cfg-nav-link" data-nav="trust"><svg><use href="#i-shield"/></svg>信任凭据</a>
+        <a href="#section-advanced" class="cfg-nav-link" data-nav="advanced"><svg><use href="#i-terminal"/></svg>探测与日志</a>
+        <a href="#section-about" class="cfg-nav-link" data-nav="about"><svg><use href="#i-info"/></svg>关于</a>
+        <div class="cfg-save-state" id="saveState"><span></span>已同步</div>
+      </aside>
+
+      <main class="cfg-main">
+        <section class="cfg-section" id="section-devices" data-section="devices">
+          <header class="cfg-section-head">
+            <div><h2>设备管理</h2><p>每台设备对应一组 MAC、广播地址和可选的 SSH / IoT 设置。</p></div>
+            <button class="btn primary" id="addDeviceButton" type="button"><svg class="btn-icon"><use href="#i-plus"/></svg>添加设备</button>
+          </header>
+          <div class="cfg-device-list" id="deviceList"></div>
+          <div class="cfg-empty" id="deviceEmpty" hidden>
+            <div class="state-icon"><svg><use href="#i-monitor"/></svg></div>
+            <h3>还没有设备</h3>
+            <p>添加设备并保存后，快速面板会多一个电源开关。</p>
+            <button class="btn primary" id="emptyAddDevice" type="button">添加第一台设备</button>
+          </div>
+        </section>
+
+        <section class="cfg-section" id="section-basic" data-section="basic">
+          <header class="cfg-section-head">
+            <div><h2>基础设置</h2><p>服务监听、快速面板和配置面板。</p></div>
+          </header>
+          <div class="cfg-card">
+            <div class="cfg-grid">
+              <label class="cfg-field"><span>面板标题</span><input id="sTitle" class="text-input" type="text" placeholder="网络唤醒"></label>
+              <label class="cfg-field"><span>监听端口</span><input id="sListenPort" class="text-input" type="number" min="1" max="65535" inputmode="numeric" placeholder="8090"><small>纯数字，1-65535</small></label>
+              <label class="cfg-field"><span>绑定地址 <em>可选</em></span><input id="sListenHost" class="text-input" type="text" placeholder="留空 = 所有网卡"><small>可填 IP 或主机名，例如 192.168.1.10</small></label>
+              <label class="cfg-field"><span>HTTPS 证书路径</span><input id="sTLSCert" class="text-input" type="text" placeholder="可选，与私钥同时配置"></label>
+              <label class="cfg-field"><span>HTTPS 私钥路径</span><input id="sTLSKey" class="text-input cfg-secret" type="password" autocomplete="off" placeholder="可选"></label>
+              <label class="cfg-field"><span>HTTP 读超时</span><input id="sReadTimeout" class="text-input" type="text" placeholder="15s"></label>
+              <label class="cfg-field"><span>退出超时</span><input id="sShutdownTimeout" class="text-input" type="text" placeholder="15s"></label>
+            </div>
+            <p class="cfg-note">修改监听端口、绑定地址、TLS 或超时后需要重启进程才能生效；其他设置保存后立即应用。</p>
+          </div>
+
+          <div class="cfg-card cfg-panel-card">
+            <div class="cfg-card-head">
+              <div><h3>配置面板 <code>/config</code></h3><p>不想手写 YAML 时，可以直接在浏览器里改设备和参数。</p></div>
+              <label class="cfg-switch"><input id="cpEnabled" type="checkbox"><span class="cfg-switch-track"></span><span class="cfg-switch-label">启用</span></label>
+            </div>
+            <p class="cfg-note">这个开关只决定开不开放 `/config`；密码和需要密码的入口在「信任凭据」里设置。</p>
+            <p class="cfg-note" id="cpDisabledNote" hidden>配置面板已关闭，<code>/config</code> 将返回 404。保存后本页会跳转到快速面板。</p>
+          </div>
+        </section>
+
+        <section class="cfg-section" id="section-trust" data-section="trust">
+          <header class="cfg-section-head">
+            <div><h2>信任凭据</h2><p>快速面板 / API、配置面板共用一个访问密码；按需选择需要密码的入口。</p></div>
+          </header>
+          <div class="cfg-card">
+            <div class="cfg-grid">
+              <label class="cfg-field cfg-span-2"><span>访问密码</span><input id="cpPassword" class="text-input cfg-secret" type="password" autocomplete="new-password" placeholder="留空表示保持当前密码"><small>密码以 Argon2id 哈希保存在加密 secrets 文件，无法读取原值；留空保持当前设置。</small></label>
+              <label class="cfg-check cfg-clear-check cfg-span-2"><input id="cpClear" type="checkbox"><span>清除访问密码（所有密码入口将不再鉴权）</span></label>
+              <div class="cfg-field cfg-span-2"><span>需要密码的入口</span>
+                <div class="cfg-grid" style="margin-top:8px">
+                  <label class="cfg-check"><input id="authQuickPanel" type="checkbox"><span>快速面板 / API</span></label>
+                  <label class="cfg-check" id="authConfigPanelField"><input id="authConfigPanel" type="checkbox"><span>配置面板</span></label>
+                </div>
+                <small>快速面板开关同时保护其调用的 /api 接口；配置面板开关只保护 /config 与 /api/config*。未设置密码时，已勾选的入口仍然开放。</small>
+              </div>
+              <div class="cfg-field cfg-span-2"><span>可信网段</span>
+                <label class="cfg-check"><input id="authTrustEnabled" type="checkbox"><span>启用访问白名单（不启用则信任所有地址）</span></label>
+                <textarea id="authTrustedNetworks" class="text-input cfg-textarea" rows="4" placeholder="192.168.10.0/24&#10;192.168.1.0/24"></textarea>
+                <small>启用后仅列出的 CIDR/IP 能访问快速面板、配置面板和 API。当前访问 IP：<strong id="authClientIP">--</strong>；保存时会校验当前 IP 是否在列表中。</small>
+              </div>
+            </div>
+            <p class="form-warning" id="authPasswordWarning" hidden><svg><use href="#i-alert"/></svg><span>已勾选需要密码的入口，但尚未设置访问密码；这些入口目前仍然开放。</span></p>
+            <p class="cfg-note">同一个密码用于快速面板/API 和配置面板登录；改完后旧会话会立即失效。</p>
+          </div>
+        </section>
+
+        <section class="cfg-section" id="section-advanced" data-section="advanced">
+          <header class="cfg-section-head"><div><h2>探测与日志</h2><p>探测周期、超时和日志级别。</p></div></header>
+          <div class="cfg-card">
+            <div class="cfg-grid">
+              <label class="cfg-field"><span>默认探测周期</span><input id="probeInterval" class="text-input" type="text" placeholder="15s"></label>
+              <label class="cfg-field"><span>默认探测超时</span><input id="probeTimeout" class="text-input" type="text" placeholder="2s"></label>
+            </div>
+            <p class="cfg-note">设备可以在“探测”页签中覆盖这两个值。修改后会重建探测任务，不会中断 SSH。</p>
+          </div>
+          <div class="cfg-card">
+            <div class="cfg-grid">
+              <label class="cfg-field"><span>日志级别</span><select id="logLevel" class="text-input"><option value="debug">debug</option><option value="info">info</option><option value="warn">warn</option><option value="error">error</option></select></label>
+              <label class="cfg-field"><span>日志格式</span><select id="logFormat" class="text-input"><option value="text">text</option><option value="json">json</option></select></label>
+            </div>
+            <p class="cfg-note">日志级别和格式需要重启进程后生效。</p>
+          </div>
+        </section>
+
+        <section class="cfg-section" id="section-about" data-section="about">
+          <header class="cfg-section-head"><div><h2>关于</h2><p>版本、路径和几条安全提醒。</p></div></header>
+          <div class="cfg-card">
+            <div class="cfg-about-grid">
+              <div><span>版本</span><strong id="aboutVersion">--</strong></div>
+              <div><span>配置文件</span><strong id="aboutPath">--</strong></div>
+              <div><span>密钥文件</span><strong id="aboutSecretsPath">--</strong></div>
+              <div><span>解密密钥文件</span><strong id="aboutSecretsKeyPath">--</strong></div>
+              <div><span>配置面板</span><strong id="aboutPanel">--</strong></div>
+              <div><span>访问密码</span><strong id="aboutToken">--</strong></div>
+            </div>
+            <div class="cfg-security-note">
+              <svg><use href="#i-shield"/></svg>
+              <div>
+                <strong>安全建议</strong>
+                <p>要放到公网，先在「信任凭据」里设置访问密码并勾选需要密码的入口，必要时再开可信网段和 HTTPS（或反向代理）。配置面板可以修改所有凭据，但不会回显已经保存的值。</p>
+              </div>
+            </div>
+            <p class="cfg-note">保存配置会重写 <code id="aboutConfigName">wol.yaml</code>，原文件保留为 <code>.bak</code> 备份。</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="cfg-footer">
+      <span id="footerVersion">WOL</span><span class="meta-sep">·</span><span>配置保存后自动重载</span>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="deviceModal" hidden>
+    <div class="modal cfg-device-modal" role="dialog" aria-modal="true" aria-labelledby="deviceModalTitle">
+      <header class="cfg-modal-head">
+        <div><h2 id="deviceModalTitle">添加设备</h2><p id="deviceModalSub">填写设备信息后应用到列表，再点击保存。</p></div>
+        <button class="modal-close" id="deviceModalClose" type="button" aria-label="关闭"><svg><use href="#i-x"/></svg></button>
+      </header>
+      <div class="cfg-tabs" id="deviceTabs" role="tablist">
+        <button class="cfg-tab is-active" type="button" data-tab="basic">基础</button>
+        <button class="cfg-tab" type="button" data-tab="reach">探测</button>
+        <button class="cfg-tab" type="button" data-tab="ssh">SSH 关机</button>
+        <button class="cfg-tab" type="button" data-tab="iot">IoT</button>
+      </div>
+      <div class="cfg-modal-body">
+        <div class="cfg-tab-panel" data-panel="basic">
+          <div class="cfg-grid">
+            <label class="cfg-field"><span>设备名称</span><input id="dName" class="text-input" type="text" placeholder="例如：书房主机"></label>
+            <label class="cfg-field"><span>设备标识 key <em>留空自动生成</em></span><input id="dKey" class="text-input" type="text" placeholder="study-pc"></label>
+            <label class="cfg-field cfg-span-2"><span>MAC 地址 <em>每行一个</em></span><textarea id="dMACs" class="text-input cfg-textarea" rows="3" placeholder="AA:BB:CC:DD:EE:FF"></textarea></label>
+            <label class="cfg-field cfg-span-2"><span>广播地址 <em>每行一个，留空自动检测</em></span><textarea id="dBroadcasts" class="text-input cfg-textarea" rows="2" placeholder="192.168.1.255"></textarea></label>
+            <label class="cfg-field"><span>WOL 端口</span><input id="dPort" class="text-input" type="number" min="1" max="65535" placeholder="9"></label>
+            <label class="cfg-field"><span>重复发送次数</span><input id="dRepeat" class="text-input" type="number" min="1" max="10" placeholder="5"></label>
+          </div>
+        </div>
+        <div class="cfg-tab-panel" data-panel="reach" hidden>
+          <div class="cfg-grid">
+            <label class="cfg-field cfg-check-field cfg-span-2"><span>&nbsp;</span><label class="cfg-check"><input id="dReachEnabled" type="checkbox"><span>启用在线探测 <em>关闭时面板不显示在线状态，唤醒照常可用</em></span></label></label>
+            <label class="cfg-field cfg-span-2"><span>探测目标 <em>每行一个 IP 或域名</em></span><textarea id="dReachTargets" class="text-input cfg-textarea" rows="3" placeholder="192.168.1.10"></textarea></label>
+            <label class="cfg-field"><span>探测方式</span><select id="dReachMethod" class="text-input"><option value="ping">ping</option><option value="tcp">tcp</option><option value="auto">auto</option></select></label>
+            <label class="cfg-field"><span>TCP 端口 <em>tcp 模式必填</em></span><input id="dReachTCPPort" class="text-input" type="number" min="1" max="65535" placeholder="445"></label>
+            <label class="cfg-field"><span>探测周期 <em>留空用全局</em></span><input id="dReachInterval" class="text-input" type="text" placeholder="15s"></label>
+            <label class="cfg-field"><span>探测超时 <em>留空用全局</em></span><input id="dReachTimeout" class="text-input" type="text" placeholder="2s"></label>
+          </div>
+          <p class="cfg-note">在线探测只用来展示状态。IP 不可达时，电源开关仍然可以尝试开机。</p>
+        </div>
+        <div class="cfg-tab-panel" data-panel="ssh" hidden>
+          <div class="cfg-grid">
+            <label class="cfg-field cfg-check-field cfg-span-2"><span>&nbsp;</span><label class="cfg-check"><input id="dSSHEnabled" type="checkbox"><span>启用 SSH 关机 / 唤醒</span></label></label>
+            <p class="form-warning cfg-span-2" id="sshDisabledWarning" hidden><svg><use href="#i-alert"/></svg><span>已经填了 SSH 信息或关机命令，但 SSH 没启用。保存后电源开关仍然不能执行关机。</span></p>
+            <label class="cfg-field"><span>主机</span><input id="dSSHHost" class="text-input" type="text" placeholder="192.168.1.10"></label>
+            <label class="cfg-field"><span>端口</span><input id="dSSHPort" class="text-input" type="number" min="1" max="65535" placeholder="22"></label>
+            <label class="cfg-field"><span>用户名</span><input id="dSSHUser" class="text-input" type="text" placeholder="root"></label>
+            <label class="cfg-field"><span>密码</span><input id="dSSHPassword" class="text-input cfg-secret" type="password" autocomplete="new-password" placeholder="与私钥至少填写一种"></label>
+            <label class="cfg-field cfg-span-2"><span>私钥文件路径</span><input id="dSSHKeyFile" class="text-input" type="text" placeholder="相对路径基于配置文件目录"><small>也可以直接在下方粘贴私钥内容。</small></label>
+            <label class="cfg-field cfg-span-2"><span>私钥内容 <em>PEM</em></span><textarea id="dSSHKey" class="text-input cfg-textarea cfg-secret" rows="3" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></label>
+            <label class="cfg-field"><span>私钥口令</span><input id="dSSHPassphrase" class="text-input cfg-secret" type="password" autocomplete="off" placeholder="没有则留空"></label>
+            <label class="cfg-field"><span>SSH 超时</span><input id="dSSHTimeout" class="text-input" type="text" placeholder="10s"></label>
+            <label class="cfg-check cfg-span-2"><input id="dClearSecrets" type="checkbox"><span>清除此设备已保存的密码、私钥、口令和 IoT 密钥</span></label>
+            <small class="cfg-span-2">已有凭据不会回显。留空表示保持，填入新值会覆盖；要全部清除再重填，勾选上面的选项。</small>
+            <label class="cfg-field cfg-span-2"><span>主机指纹 <em>SHA256</em></span><input id="dSSHHostKey" class="text-input" type="text" placeholder="SHA256:..."><small>点击“探测指纹”连接主机并获取；确认后自动填入。</small></label>
+            <div class="cfg-field cfg-span-2 cfg-inline-action">
+              <button class="btn ghost" id="sshProbeButton" type="button"><svg class="btn-icon"><use href="#i-key"/></svg>探测主机指纹</button>
+              <span class="cfg-probe-status" id="sshProbeStatus"></span>
+            </div>
+            <label class="cfg-field cfg-check-field cfg-span-2"><span>&nbsp;</span><label class="cfg-check"><input id="dSSHAllowUnknown" type="checkbox"><span>首次连接允许未知主机指纹（不推荐）</span></label></label>
+            <label class="cfg-field cfg-span-2"><span>关机命令</span><input id="dSSHShutdownCommand" class="text-input" type="text" placeholder="Linux: sudo -n shutdown -h now / Windows: shutdown /s /t 0"><small>命令由配置文件固定，API 不会传入任意命令。</small></label>
+            <div class="cfg-preset-block cfg-span-2">
+              <div class="cfg-preset-row" data-preset-target="dSSHShutdownCommand">
+                <span class="cfg-preset-label">一键填入</span>
+                <button type="button" class="cfg-preset" data-value="sudo -n /usr/local/sbin/wol-shutdown">Linux · 辅助脚本</button>
+                <button type="button" class="cfg-preset" data-value="sudo -n systemctl poweroff">Linux · sudo 免密</button>
+                <button type="button" class="cfg-preset" data-value="sudo -n shutdown -h now">Linux · shutdown</button>
+                <button type="button" class="cfg-preset" data-value="echo 'sudo密码' | sudo -S systemctl poweroff">Linux · sudo 密码</button>
+                <button type="button" class="cfg-preset" data-value="systemctl poweroff">Linux · root</button>
+                <button type="button" class="cfg-preset" data-value="shutdown /s /t 0">Windows</button>
+                <button type="button" class="cfg-preset" data-value="osascript -e 'tell app &quot;System Events&quot; to shut down'">macOS</button>
+              </div>
+              <details class="cfg-details">
+                <summary>Linux 普通用户如何免密关机？</summary>
+                <p>SSH 登录用户通常是普通用户，<code>sudo</code> 在非交互会话中不能询问密码，必须配置 NOPASSWD。以下配置需在<strong>目标主机</strong>上完成，并把 <code>wol</code> 换成实际的 SSH 登录用户。</p>
+                <pre># 目标主机：/usr/local/sbin/wol-shutdown
+#!/bin/sh
+exec /sbin/shutdown -h now</pre>
+                <pre># 目标主机：/etc/sudoers.d/wol
+wol ALL=(root) NOPASSWD: /usr/local/sbin/wol-shutdown
+# sudo chmod 0755 /usr/local/sbin/wol-shutdown
+# sudo chmod 0440 /etc/sudoers.d/wol</pre>
+                <p>保存后点上方「Linux · 辅助脚本」，或手动填写 <code>sudo -n /usr/local/sbin/wol-shutdown</code>。</p>
+                <p><strong>sudo -S 密码管道：</strong>「Linux · sudo 密码」会填入 <code>echo '你的密码' | sudo -S systemctl poweroff</code>。密码会出现在命令行进程参数和配置文件中，建议仅临时使用；长期运行优先用 NOPASSWD 或辅助脚本。</p>
+              </details>
+            </div>
+            <label class="cfg-field cfg-span-2"><span>SSH 唤醒命令 <em>可选</em></span><input id="dSSHWakeCommand" class="text-input" type="text" placeholder="留空则使用 WOL 魔法包"></label>
+          </div>
+        </div>
+        <div class="cfg-tab-panel" data-panel="iot" hidden>
+          <div class="cfg-subcard">
+            <div class="cfg-card-head"><div><h3>巴法云</h3><p>同一账号私钥可被多个设备共用，主题需以 001 结尾。</p></div><label class="cfg-switch"><input id="dBemfaEnabled" type="checkbox"><span class="cfg-switch-track"></span><span class="cfg-switch-label">启用</span></label></div>
+            <div class="cfg-grid">
+              <label class="cfg-field"><span>私钥</span><input id="dBemfaSecret" class="text-input cfg-secret" type="password" autocomplete="off" placeholder="巴法云私钥"></label>
+              <label class="cfg-field"><span>主题</span><input id="dBemfaTopic" class="text-input" type="text" placeholder="deskpc001"></label>
+            </div>
+          </div>
+          <div class="cfg-subcard">
+            <div class="cfg-card-head"><div><h3>点灯科技</h3><p>自动同步小爱、天猫精灵和小度插座。</p></div><label class="cfg-switch"><input id="dBlinkerEnabled" type="checkbox"><span class="cfg-switch-track"></span><span class="cfg-switch-label">启用</span></label></div>
+            <div class="cfg-grid">
+              <label class="cfg-field"><span>Auth Key</span><input id="dBlinkerAuth" class="text-input cfg-secret" type="password" autocomplete="off" placeholder="点灯科技设备 Auth Key"></label>
+              <label class="cfg-field"><span>设备类型</span><select id="dBlinkerType" class="text-input"><option value="outlet">outlet</option><option value="light">light</option><option value="multi_outlet">multi_outlet</option><option value="sensor">sensor</option><option value="fan">fan</option><option value="aircondition">aircondition</option></select></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="cfg-modal-foot">
+        <span class="cfg-modal-hint" id="deviceModalHint"></span>
+        <button class="btn ghost" id="deviceCancel" type="button">取消</button>
+        <button class="btn primary" id="deviceApply" type="button">应用到列表</button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="confirmModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-icon danger"><svg><use href="#i-trash"/></svg></div>
+      <h2 id="confirmTitle">确认操作</h2>
+      <p id="confirmCopy"></p>
+      <div class="modal-actions">
+        <button class="btn ghost" id="confirmCancel" type="button">取消</button>
+        <button class="btn danger" id="confirmOk" type="button">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="disabledModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-icon"><svg><use href="#i-check"/></svg></div>
+      <h2>配置已保存</h2>
+      <p>配置面板已关闭，正在返回快速面板…</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/assets/config.js"></script>
+</body>
+</html>

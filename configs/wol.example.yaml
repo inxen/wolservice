@@ -1,0 +1,57 @@
+# WOL 网络唤醒服务配置模板
+# 完整字段参考：config.md；校验：wol -config wol.yaml -check
+# 修改后自动热重载；listen / TLS 变更需重启进程。
+# 访问密码/私钥不在本文件：首次启动后保存于同目录的 wol.secrets.yaml（0600）。
+
+server:
+  listen: "8090"                 # 纯数字端口，所有网卡
+  title: "网络唤醒"
+  # tls_cert: "server.crt"        # 与 tls_key 成对配置
+  # tls_key: "server.key"
+
+log:
+  level: "info"                   # debug | info | warn | error
+  format: "text"                  # text | json
+
+# 网页配置中心：http://<主机>:8090/config
+# 默认无密码；首次进入后请在 /config 中设置密码（Argon2id 哈希保存）。
+config_panel:
+  enabled: true
+
+# 访问密码在 /config 的「信任凭据」中设置（哈希保存在 secrets 文件）。
+# 快速面板开关同时保护其调用的 /api 接口；配置面板开关仅在启用配置面板时生效。
+auth:
+  quick_panel: false             # 快速面板 / API
+  config_panel: true             # 配置面板
+  # 启用后只有列出的 CIDR/IP 能访问面板和 API；不启用则信任所有地址。
+  trusted_networks_enabled: false
+  trusted_networks: []           # 例如 ["192.168.10.0/24", "192.168.1.0/24"]
+
+probe:
+  interval: "15s"                 # 设备可用 reachability.interval 覆盖
+  timeout: "2s"
+
+devices:
+  - key: "nas"                    # 建议显式设置，保持 API 路径稳定
+    # secret_ref: "nas"           # 凭据分组引用；默认等于 key
+    name: "NAS"
+    macs: ["AA:BB:CC:DD:EE:FF"]
+    # broadcast_ips: ["192.168.1.255"]  # 留空自动检测
+    # port: 9
+    # repeat: 5
+    reachability:
+      enabled: true
+      targets: ["192.168.1.10"]
+      # method: "ping"           # ping | tcp | auto
+      # tcp_port: 445             # method=tcp 时必填
+    # ssh:
+    #   enabled: true
+    #   user: "root"
+    #   private_key_file: "id_ed25519"
+    #   host_key: "SHA256:..."
+    #   shutdown_command: "shutdown -h now"
+    # iot:
+    #   bemfa:
+    #     enabled: true
+    #     secret_key: "your-bemfa-secret-key"
+    #     topic: "nas001"

@@ -1,0 +1,27 @@
+# Binaries and local configuration
+bin/
+dist/
+wol.yaml
+*.exe
+
+# Local reference material
+lucky-src/
+模板/
+wol-quickcontrol.html
+/panel*.png
+.tmp/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+*.bak
+
+*.secrets.yaml
+
+*.secrets.key
+
+# Build-time secrets master key (injected into the binary with -ldflags)
+.wol-embedded-key

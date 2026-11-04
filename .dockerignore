@@ -1,0 +1,14 @@
+.git
+.gitignore
+lucky-src
+bin
+dist
+docs
+.tmp
+wol.yaml
+*.exe
+*.png
+README.md
+*.bak
+*.secrets.yaml
+*.secrets.key
