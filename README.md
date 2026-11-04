@@ -17,11 +17,10 @@
 需要 Go 1.22 以上。
 
 ```bash
-# 生成一把内嵌主密钥，只生成一次，之后备份好
-[ -f .wol-embedded-key ] || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > .wol-embedded-key
-
 bash build.sh        # 产物在 dist/，每次构建会先清掉旧版本
 ```
+
+仓库里带了一份 `.wol-embedded-key`，本地构建和 GitHub Release 共用这把主密钥。它和发布出去的二进制一样是公开的、能提取，只用来避免“加密文件还在、密钥文件丢了”。想换成自己的密钥就直接替换这个文件，换完已保存的凭据要重新填。
 
 Windows 用 `.\build.ps1`，只想编当前平台可以 `make build`。不内嵌密钥也能跑，只是会退回磁盘密钥文件，日志里会提醒。
 
@@ -45,7 +44,7 @@ cp configs/wol.example.yaml wol.yaml
 
 - 访问密码、SSH 密码/私钥/口令、巴法云和点灯科技的密钥都存在同目录的 `wol.secrets.yaml`，AES-256-GCM 加密，访问密码只存 Argon2id 哈希。
 - 主密钥优先取环境变量 `WOL_SECRETS_KEY`，其次是构建时内嵌的；旧的 `wol.secrets.key` 只用于迁移和回退。
-- 内嵌密钥防的是配置和备份被拷走，防不住在线 root，也防不住从二进制里把密钥挖出来。官方 Release 所有安装共用一把，能下载就能提取。
+- 内嵌密钥防的是配置和备份被拷走，防不住在线 root，也防不住从二进制里把密钥挖出来。仓库里的 `.wol-embedded-key` 和官方 Release 用的是同一把，能下载就能提取。
 - 主密钥丢了，已保存的凭据就解不开，只能删掉 `wol.secrets.yaml` 重填。
 
 ## 访问控制

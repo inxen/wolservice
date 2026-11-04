@@ -24,4 +24,3 @@ Thumbs.db
 *.secrets.key
 
 # Build-time secrets master key (injected into the binary with -ldflags)
-.wol-embedded-key
