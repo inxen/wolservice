@@ -170,6 +170,31 @@ devices:
 	}
 }
 
+func TestManagerListSortedByPriority(t *testing.T) {
+	path, cfg := loadTestConfig(t, `
+server:
+  listen: ":0"
+devices:
+  - key: "late"
+    priority: 10
+    macs: ["01:02:03:04:05:01"]
+  - key: "first"
+    priority: 1
+    macs: ["01:02:03:04:05:02"]
+  - key: "second"
+    priority: 2
+    macs: ["01:02:03:04:05:03"]
+`)
+	mgr := NewManager(discardLogger(), path, cfg)
+	var keys []string
+	for _, status := range mgr.List() {
+		keys = append(keys, status.Key)
+	}
+	if got := strings.Join(keys, ","); got != "first,second,late" {
+		t.Fatalf("status order = %q, want first,second,late", got)
+	}
+}
+
 func itoa(value int) string {
 	return strconv.Itoa(value)
 }

@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo 0.7.0)}"
+VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo 0.7.1)}"
 LDFLAGS="-s -w -X wol/internal/version.Version=${VERSION}"
 
 EMBEDDED_KEY="${WOL_EMBEDDED_KEY:-}"

@@ -1,4 +1,4 @@
-VERSION ?= 0.7.0
+VERSION ?= 0.7.1
 EMBEDDED_KEY ?= $(shell tr -d '\r\n' < .wol-embedded-key 2>/dev/null)
 LDFLAGS := -s -w -X wol/internal/version.Version=$(VERSION)
 ifneq ($(strip $(EMBEDDED_KEY)),)

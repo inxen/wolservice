@@ -8,6 +8,7 @@
 
 - 魔法包唤醒，多 MAC、多广播地址，端口和重发次数可调
 - 在线探测，用系统 `ping` 或 TCP 连接
+- 设备排序优先级，数字越小越靠前；手机竖屏设备多时自动两列紧凑显示
 - SSH 关机，密码或私钥登录并校验主机指纹；配了 SSH 唤醒命令时优先走 SSH
 - TP-Link 摄像头镜头遮蔽（本地接口，遮蔽/取消遮蔽）
 - 巴法云、点灯科技，能用小爱、天猫精灵、小度控制
@@ -160,7 +161,7 @@ WOL 靠二层广播，建议 `--network host`，Docker Desktop 在 Windows/macOS
 交叉编译：
 
 ```bash
-VERSION=0.7.0 bash build.sh
+VERSION=0.7.1 bash build.sh
 # dist/wol-windows-amd64.exe, wol-linux-arm64, wol-linux-mipsle, ...
 ```
 

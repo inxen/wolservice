@@ -599,6 +599,27 @@ a.icon-btn { text-decoration: none; }
   .device-card { padding: 18px; }
 }
 
+/* 手机竖屏：计算机卡片只保留图标和名称；设备多时两列排布 */
+@media (max-width: 700px) and (orientation: portrait) {
+  .device-card.is-computer .device-sub { display: none; }
+
+  .device-grid.is-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .device-grid.is-compact .device-card { padding: 13px; gap: 8px; border-radius: 20px; }
+  .device-grid.is-compact .device-sub,
+  .device-grid.is-compact .badge { display: none; }
+  .device-grid.is-compact .card-top { gap: 8px; }
+  .device-grid.is-compact .device-icon { width: 36px; height: 36px; border-radius: 11px; }
+  .device-grid.is-compact .device-icon svg { width: 19px; height: 19px; }
+  .device-grid.is-compact .device-title h3 { font-size: 13px; }
+  .device-grid.is-compact .power-area { height: 128px; }
+  .device-grid.is-compact .power-wrap { width: 112px; height: 112px; }
+  .device-grid.is-compact .power-button { width: 100px; height: 100px; gap: 3px; }
+  .device-grid.is-compact .power-button svg { width: 26px; height: 26px; }
+  .device-grid.is-compact .power-label { font-size: 12px; }
+  .device-grid.is-compact .power-hint { font-size: 9px; }
+  .device-grid.is-compact .comet-track { inset: 6px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }

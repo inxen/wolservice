@@ -391,6 +391,33 @@ devices:
 	}
 }
 
+func TestDevicePrioritySortsStable(t *testing.T) {
+	path := writeConfig(t, `
+devices:
+  - key: "a"
+    priority: 2
+    macs: ["01:02:03:04:05:01"]
+  - key: "b"
+    priority: 1
+    macs: ["01:02:03:04:05:02"]
+  - key: "c"
+    priority: 1
+    macs: ["01:02:03:04:05:03"]
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	var keys []string
+	for _, device := range cfg.Devices {
+		keys = append(keys, device.Key)
+	}
+	got := strings.Join(keys, ",")
+	if got != "b,c,a" {
+		t.Fatalf("device order = %q, want b,c,a", got)
+	}
+}
+
 func TestCameraRequiresHostAndPassword(t *testing.T) {
 	cases := []string{
 		`

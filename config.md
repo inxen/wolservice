@@ -170,6 +170,7 @@ devices
 | `type` | string | `"computer"` | 否 | 设备类型：`computer`（WOL / 探测 / SSH）或 `tplink-camera`（TP-Link 镜头遮蔽） |
 | `secret_ref` | string | 同 `key` | 否 | 凭据分组引用；默认使用 `key`，不同设备不能重复 |
 | `name` | string | 同 `key` | 否 | 面板显示名 |
+| `priority` | int | `0` | 否 | 排序优先级；数字越小越靠前，相同值保持配置文件顺序 |
 | `macs` | string[] | — | 是 | MAC 列表；支持 `:` 或 `-` 分隔，自动转为大写冒号格式。`tplink-camera` 类型可留空 |
 | `broadcast_ips` | string[] | `[]` | 否 | 魔法包广播地址；留空自动枚举本机所有活动 IPv4 网卡的定向广播地址，只接受 IPv4 |
 | `port` | int | `9` | 否 | WOL UDP 端口；非法值回落 `9` |

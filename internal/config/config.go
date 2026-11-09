@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -76,6 +77,7 @@ type Device struct {
 	Type         string             `yaml:"type" json:"type"`
 	SecretRef    string             `yaml:"secret_ref,omitempty" json:"secret_ref"`
 	Name         string             `yaml:"name" json:"name"`
+	Priority     int                `yaml:"priority" json:"priority"`
 	MACs         []string           `yaml:"macs" json:"macs"`
 	BroadcastIPs []string           `yaml:"broadcast_ips,omitempty" json:"broadcast_ips"`
 	Port         int                `yaml:"port" json:"port"`
@@ -253,6 +255,9 @@ func (c *Config) Normalize() {
 		}
 		seen[d.Key]++
 	}
+	sort.SliceStable(c.Devices, func(i, j int) bool {
+		return c.Devices[i].Priority < c.Devices[j].Priority
+	})
 }
 
 func (c *Config) normalizeDevice(d *Device) {

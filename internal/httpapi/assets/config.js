@@ -564,6 +564,8 @@
     if (device.reachability && device.reachability.enabled) meta.appendChild(el("span", "cfg-chip", "探测"));
     if (device.iot && device.iot.bemfa && device.iot.bemfa.enabled) meta.appendChild(el("span", "cfg-chip amber", "巴法"));
     if (device.iot && device.iot.blinker && device.iot.blinker.enabled) meta.appendChild(el("span", "cfg-chip amber", "点灯"));
+    const priority = Number(device.priority) || 0;
+    if (priority !== 0) meta.appendChild(el("span", "cfg-chip", "优先级 " + priority));
     card.appendChild(meta);
 
     const macs = device.macs || [];
@@ -616,6 +618,7 @@
       key: "",
       type: DEVICE_TYPE_COMPUTER,
       name: "",
+      priority: 0,
       macs: [],
       broadcast_ips: [],
       port: 9,
@@ -668,6 +671,7 @@
 
     setVal("dName", device.name);
     setVal("dKey", device.key);
+    setVal("dPriority", device.priority || 0);
     setVal("dMACs", (device.macs || []).join("\n"));
     setVal("dBroadcasts", (device.broadcast_ips || []).join("\n"));
     setVal("dPort", device.port || 9);
@@ -762,6 +766,7 @@
       device.secret_ref = state.editingSecretRef;
     device.type = type;
     device.name = val("dName");
+    device.priority = num("dPriority", 0);
     device.macs = lines("dMACs");
     device.broadcast_ips = lines("dBroadcasts");
     device.port = num("dPort", 0);
@@ -899,6 +904,9 @@
     } else {
       state.cfg.devices.push(device);
     }
+    state.cfg.devices.sort(function (a, b) {
+      return (Number(a.priority) || 0) - (Number(b.priority) || 0);
+    });
     setDirty(true);
     renderDevices();
     closeDeviceModal();

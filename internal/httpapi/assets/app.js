@@ -544,6 +544,7 @@
     if (camera) tone = cameraTone(device);
     var card = el("article", "device-card tone-" + tone + (power ? " is-power-busy" : ""));
     card.dataset.deviceKey = device.key;
+    if (!camera) card.classList.add("is-computer");
 
     var top = el("div", "card-top");
     var iconBox = el("div", "device-icon");
@@ -583,6 +584,7 @@
   function render() {
     var grid = $("deviceGrid");
     grid.textContent = "";
+    grid.classList.toggle("is-compact", state.devices.length > 2);
 
     if (state.devices.length === 0) {
       showState("empty", t("emptyTitle"), t("emptyCopy"));

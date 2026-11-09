@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-$Version = if ($env:VERSION) { $env:VERSION } else { "0.7.0" }
+$Version = if ($env:VERSION) { $env:VERSION } else { "0.7.1" }
 $LdFlags = "-s -w -X wol/internal/version.Version=$Version"
 
 $EmbeddedKey = $env:WOL_EMBEDDED_KEY
