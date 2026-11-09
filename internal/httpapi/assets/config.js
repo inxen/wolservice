@@ -3,6 +3,8 @@
 
   const THEMES = ["auto", "light", "dark"];
   const SVG_NS = "http://www.w3.org/2000/svg";
+  const DEVICE_TYPE_COMPUTER = "computer";
+  const DEVICE_TYPE_CAMERA = "tplink-camera";
 
   const state = {
     cfg: null,
@@ -511,20 +513,23 @@
     const ssh = device.ssh || {};
     const bemfa = (device.iot && device.iot.bemfa) || {};
     const blinker = (device.iot && device.iot.blinker) || {};
+    const camera = device.camera || {};
     return {
       ssh_password: Boolean(stored.ssh_password || ssh.password),
       ssh_private_key: Boolean(stored.ssh_private_key || ssh.private_key),
       ssh_passphrase: Boolean(stored.ssh_passphrase || ssh.passphrase),
       bemfa_secret_key: Boolean(stored.bemfa_secret_key || bemfa.secret_key),
-      blinker_auth_key: Boolean(stored.blinker_auth_key || blinker.auth_key)
+      blinker_auth_key: Boolean(stored.blinker_auth_key || blinker.auth_key),
+      camera_password: Boolean(stored.camera_password || camera.password)
     };
   }
 
   function createDeviceCard(device, index) {
+    const isCamera = device.type === DEVICE_TYPE_CAMERA;
     const card = el("article", "cfg-device-card");
     const top = el("div", "cfg-device-top");
     const iconBox = el("div", "cfg-device-icon");
-    iconBox.appendChild(icon("monitor"));
+    iconBox.appendChild(icon(isCamera ? "camera" : "monitor"));
     top.appendChild(iconBox);
 
     const title = el("div", "cfg-device-title");
@@ -552,6 +557,7 @@
 
     const meta = el("div", "cfg-device-meta");
     const stored = deviceSecretPresence(device);
+    if (isCamera) meta.appendChild(el("span", "cfg-chip blue", "摄像头"));
     if (device.ssh && device.ssh.enabled) meta.appendChild(el("span", "cfg-chip blue", "SSH"));
     else if (device.ssh && (sshHasConfig(device.ssh) || stored.ssh_password || stored.ssh_private_key || stored.ssh_passphrase))
       meta.appendChild(el("span", "cfg-chip amber", "SSH 未启用"));
@@ -561,7 +567,9 @@
     card.appendChild(meta);
 
     const macs = device.macs || [];
-    const macText = macs.length ? macs[0] + (macs.length > 1 ? " +" + (macs.length - 1) : "") : "未设置 MAC";
+    const macText = macs.length
+      ? macs[0] + (macs.length > 1 ? " +" + (macs.length - 1) : "")
+      : (isCamera ? "摄像头设备 · 仅镜头遮蔽" : "未设置 MAC");
     card.appendChild(el("div", "cfg-device-macs", macText));
     return card;
   }
@@ -606,6 +614,7 @@
   function defaultDevice() {
     return {
       key: "",
+      type: DEVICE_TYPE_COMPUTER,
       name: "",
       macs: [],
       broadcast_ips: [],
@@ -620,7 +629,8 @@
       iot: {
         bemfa: { enabled: false, secret_key: "", topic: "" },
         blinker: { enabled: false, auth_key: "", device_type: "outlet" }
-      }
+      },
+      camera: { enabled: false, host: "", port: 80, username: "admin", password: "" }
     };
   }
 
@@ -628,6 +638,22 @@
     const node = $(id);
     node.value = "";
     node.placeholder = present ? "已设置，留空保持" : placeholder;
+  }
+
+  function currentDeviceType() {
+    const node = $("dType");
+    return node && node.value === DEVICE_TYPE_CAMERA ? DEVICE_TYPE_CAMERA : DEVICE_TYPE_COMPUTER;
+  }
+
+  function applyDeviceTypeUI(type) {
+    const isCamera = type === DEVICE_TYPE_CAMERA;
+    $("basicComputerFields").hidden = isCamera;
+    $("basicCameraFields").hidden = !isCamera;
+    $("tabReach").hidden = isCamera;
+    $("tabSSH").hidden = isCamera;
+    const active = document.querySelector("#deviceTabs .cfg-tab.is-active");
+    if (!active || active.hidden) setDeviceTab("basic");
+    setDeviceHint("");
   }
 
   function openDeviceModal(index) {
@@ -684,6 +710,14 @@
     setSecretValue("dBlinkerAuth", stored.blinker_auth_key, "点灯科技设备 Auth Key");
     setVal("dBlinkerType", blinker.device_type || "outlet");
 
+    const camera = device.camera || {};
+    setVal("dType", device.type === DEVICE_TYPE_CAMERA ? DEVICE_TYPE_CAMERA : DEVICE_TYPE_COMPUTER);
+    setVal("dCameraHost", camera.host);
+    setVal("dCameraPort", camera.port || 80);
+    setVal("dCameraUsername", camera.username || "admin");
+    setSecretValue("dCameraPassword", stored.camera_password, "TP-Link App 中设置的设备密码");
+    applyDeviceTypeUI(currentDeviceType());
+
     setDeviceTab("basic");
     $("deviceModal").hidden = false;
     document.body.classList.add("modal-open");
@@ -714,6 +748,9 @@
     const prevIoT = device.iot || {};
     const prevBemfa = prevIoT.bemfa || {};
     const prevBlinker = prevIoT.blinker || {};
+    const prevCamera = device.camera || {};
+    const type = currentDeviceType();
+    const isCamera = type === DEVICE_TYPE_CAMERA;
     // 输入框留空表示“保持”——保留本设备已填写但还没保存的凭据；
     // 勾选清除时不再保留，空就是空。
     const clearing = checked("dClearSecrets");
@@ -723,13 +760,14 @@
     device.key = val("dKey");
     if (state.editingIndex >= 0 && state.editingSecretRef && device.key !== state.editingSecretRef && !device.secret_ref)
       device.secret_ref = state.editingSecretRef;
+    device.type = type;
     device.name = val("dName");
     device.macs = lines("dMACs");
     device.broadcast_ips = lines("dBroadcasts");
     device.port = num("dPort", 0);
     device.repeat = num("dRepeat", 0);
     device.reachability = {
-      enabled: checked("dReachEnabled"),
+      enabled: isCamera ? false : checked("dReachEnabled"),
       targets: lines("dReachTargets"),
       method: $("dReachMethod").value,
       tcp_port: num("dReachTCPPort", 0),
@@ -737,7 +775,7 @@
       timeout: duration("dReachTimeout")
     };
     device.ssh = {
-      enabled: checked("dSSHEnabled"),
+      enabled: isCamera ? false : checked("dSSHEnabled"),
       host: val("dSSHHost"),
       port: num("dSSHPort", 22),
       user: val("dSSHUser"),
@@ -763,6 +801,13 @@
       device_type: $("dBlinkerType").value
     };
     device.iot = iot;
+    device.camera = {
+      enabled: isCamera,
+      host: val("dCameraHost"),
+      port: num("dCameraPort", 80),
+      username: val("dCameraUsername"),
+      password: keep(raw("dCameraPassword"), prevCamera.password)
+    };
     device.clear_secrets = clearing;
     return device;
   }
@@ -775,11 +820,28 @@
 
   function applyDevice() {
     const device = readDeviceForm();
-    if (device.macs.length === 0) {
+    const isCamera = device.type === DEVICE_TYPE_CAMERA;
+    if (!isCamera && device.macs.length === 0) {
       setDeviceTab("basic");
-      setDeviceHint("至少填写一个 MAC 地址");
+      setDeviceHint("计算机类型至少填写一个 MAC 地址");
       $("dMACs").focus();
       return;
+    }
+    if (isCamera) {
+      if (!device.camera.host) {
+        setDeviceTab("basic");
+        setDeviceHint("摄像头主机不能为空");
+        $("dCameraHost").focus();
+        return;
+      }
+      const stored = state.editingSecretStatus || {};
+      const keptCameraPassword = !device.clear_secrets && stored.camera_password;
+      if (!device.camera.password && !keptCameraPassword) {
+        setDeviceTab("basic");
+        setDeviceHint("摄像头设备密码不能为空");
+        $("dCameraPassword").focus();
+        return;
+      }
     }
     const key = device.key.trim();
     if (key) {
@@ -801,7 +863,7 @@
       $("dReachTargets").focus();
       return;
     }
-    if (device.ssh.enabled) {
+    if (!isCamera && device.ssh.enabled) {
       if (!device.ssh.host && !hasReachTargets) {
         setDeviceTab("ssh");
         setDeviceHint("SSH 主机不能为空");
@@ -949,6 +1011,7 @@
 
     $("addDeviceButton").addEventListener("click", function () { openDeviceModal(-1); });
     $("emptyAddDevice").addEventListener("click", function () { openDeviceModal(-1); });
+    $("dType").addEventListener("change", function () { applyDeviceTypeUI(currentDeviceType()); });
     $("deviceModalClose").addEventListener("click", closeDeviceModal);
     $("deviceCancel").addEventListener("click", closeDeviceModal);
     $("deviceApply").addEventListener("click", applyDevice);

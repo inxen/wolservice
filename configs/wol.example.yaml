@@ -55,3 +55,18 @@ devices:
     #     enabled: true
     #     secret_key: "your-bemfa-secret-key"
     #     topic: "nas001"
+
+  # TP-Link 摄像头：镜头遮蔽开关，不需要 MAC，也没有探测 / SSH
+  # - key: "camera"
+  #   type: "tplink-camera"
+  #   name: "门口摄像头"
+  #   camera:
+  #     host: "192.168.1.20"
+  #     # port: 80                 # 默认 80
+  #     # username: "admin"        # 默认 admin
+  #     password: "TP-Link App 中设置的设备密码"   # 保存后移入 secrets 文件
+  #   iot:                         # 可选：on = 取消遮蔽，off = 遮蔽
+  #     bemfa:
+  #       enabled: true
+  #       secret_key: "your-bemfa-secret-key"
+  #       topic: "camera001"

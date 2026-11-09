@@ -23,6 +23,9 @@ const (
 	DefaultProbeTimeout    = 2 * time.Second
 	DefaultSSHTimeout      = 10 * time.Second
 	DefaultShutdownTimeout = 15 * time.Second
+
+	DeviceTypeComputer     = "computer"
+	DeviceTypeTPLinkCamera = "tplink-camera"
 )
 
 type Config struct {
@@ -70,6 +73,7 @@ type ProbeConfig struct {
 
 type Device struct {
 	Key          string             `yaml:"key" json:"key"`
+	Type         string             `yaml:"type" json:"type"`
 	SecretRef    string             `yaml:"secret_ref,omitempty" json:"secret_ref"`
 	Name         string             `yaml:"name" json:"name"`
 	MACs         []string           `yaml:"macs" json:"macs"`
@@ -79,7 +83,17 @@ type Device struct {
 	Reachability ReachabilityConfig `yaml:"reachability" json:"reachability"`
 	SSH          SSHConfig          `yaml:"ssh" json:"ssh"`
 	IoT          IoTConfig          `yaml:"iot" json:"iot"`
+	Camera       CameraConfig       `yaml:"camera" json:"camera"`
 	ClearSecrets bool               `yaml:"-" json:"clear_secrets,omitempty"`
+}
+
+type CameraConfig struct {
+	// Enabled 由 type 推导，保留用于兼容旧配置和配置面板提交的数据。
+	Enabled  bool   `yaml:"enabled,omitempty" json:"enabled"`
+	Host     string `yaml:"host,omitempty" json:"host"`
+	Port     int    `yaml:"port" json:"port"`
+	Username string `yaml:"username,omitempty" json:"username"`
+	Password string `yaml:"password,omitempty" json:"password"`
 }
 
 type ReachabilityConfig struct {
@@ -175,6 +189,7 @@ func (c Config) WithoutSecrets() Config {
 		out.Devices[i].SSH.Passphrase = ""
 		out.Devices[i].IoT.Bemfa.SecretKey = ""
 		out.Devices[i].IoT.Blinker.AuthKey = ""
+		out.Devices[i].Camera.Password = ""
 		out.Devices[i].ClearSecrets = false
 	}
 	return out
@@ -269,6 +284,21 @@ func (c *Config) normalizeDevice(d *Device) {
 	if d.Name == "" {
 		d.Name = d.Key
 	}
+	d.Type = strings.ToLower(strings.TrimSpace(d.Type))
+	switch d.Type {
+	case "":
+		if d.Camera.Enabled {
+			d.Type = DeviceTypeTPLinkCamera
+		} else {
+			d.Type = DeviceTypeComputer
+		}
+	case DeviceTypeComputer:
+		d.Camera.Enabled = false
+	case DeviceTypeTPLinkCamera:
+		d.Camera.Enabled = true
+		d.Reachability.Enabled = false
+		d.SSH.Enabled = false
+	}
 	d.SecretRef = strings.TrimSpace(d.SecretRef)
 	if d.SecretRef == "" {
 		d.SecretRef = d.Key
@@ -312,6 +342,14 @@ func (c *Config) normalizeDevice(d *Device) {
 	d.IoT.Bemfa.Topic = strings.TrimSpace(d.IoT.Bemfa.Topic)
 	d.IoT.Bemfa.SecretKey = strings.TrimSpace(d.IoT.Bemfa.SecretKey)
 	d.IoT.Blinker.AuthKey = strings.TrimSpace(d.IoT.Blinker.AuthKey)
+	d.Camera.Host = strings.TrimSpace(d.Camera.Host)
+	d.Camera.Username = strings.TrimSpace(d.Camera.Username)
+	if d.Camera.Port <= 0 || d.Camera.Port > 65535 {
+		d.Camera.Port = 80
+	}
+	if d.Camera.Username == "" {
+		d.Camera.Username = "admin"
+	}
 	if d.MACs == nil {
 		d.MACs = []string{}
 	}
@@ -347,29 +385,36 @@ func (c *Config) Validate() error {
 	for i := range c.Devices {
 		d := &c.Devices[i]
 		prefix := fmt.Sprintf("devices[%d] (%s)", i, d.Key)
+		switch d.Type {
+		case DeviceTypeComputer, DeviceTypeTPLinkCamera:
+		default:
+			problems = append(problems, fmt.Sprintf("%s: type must be %q or %q", prefix, DeviceTypeComputer, DeviceTypeTPLinkCamera))
+		}
 		if previous, exists := secretRefs[d.SecretRef]; exists {
 			problems = append(problems, fmt.Sprintf("%s: secret_ref %q is already used by %s", prefix, d.SecretRef, previous))
 		} else {
 			secretRefs[d.SecretRef] = d.Key
 		}
-		if len(d.MACs) == 0 {
+		if len(d.MACs) == 0 && !d.HasCamera() {
 			problems = append(problems, prefix+": macs must not be empty")
 		}
-		for _, mac := range d.MACs {
-			if !validMAC(mac) {
-				problems = append(problems, fmt.Sprintf("%s: invalid mac %q", prefix, mac))
+		if !d.HasCamera() {
+			for _, mac := range d.MACs {
+				if !validMAC(mac) {
+					problems = append(problems, fmt.Sprintf("%s: invalid mac %q", prefix, mac))
+				}
 			}
-		}
-		for _, ip := range d.BroadcastIPs {
-			parsed := net.ParseIP(ip)
-			if parsed == nil || parsed.To4() == nil {
-				problems = append(problems, fmt.Sprintf("%s: broadcast ip %q must be IPv4", prefix, ip))
+			for _, ip := range d.BroadcastIPs {
+				parsed := net.ParseIP(ip)
+				if parsed == nil || parsed.To4() == nil {
+					problems = append(problems, fmt.Sprintf("%s: broadcast ip %q must be IPv4", prefix, ip))
+				}
 			}
 		}
 		if strings.ContainsAny(d.Key, "/?#") {
 			problems = append(problems, prefix+": key must not contain /, ? or #")
 		}
-		if d.Reachability.Enabled {
+		if d.Reachability.Enabled && !d.HasCamera() {
 			if len(d.Reachability.Targets) == 0 {
 				problems = append(problems, prefix+": reachability.targets must not be empty when enabled")
 			}
@@ -388,7 +433,7 @@ func (c *Config) Validate() error {
 				}
 			}
 		}
-		if d.SSH.Enabled {
+		if d.SSH.Enabled && !d.HasCamera() {
 			if d.SSH.Host == "" {
 				problems = append(problems, prefix+": ssh.host is required")
 			} else if !validHost(d.SSH.Host) {
@@ -430,6 +475,16 @@ func (c *Config) Validate() error {
 				blinkerKeys[d.IoT.Blinker.AuthKey] = d.Key
 			}
 		}
+		if d.HasCamera() {
+			if d.Camera.Host == "" {
+				problems = append(problems, prefix+": camera.host is required")
+			} else if !validHost(d.Camera.Host) {
+				problems = append(problems, fmt.Sprintf("%s: invalid camera.host %q", prefix, d.Camera.Host))
+			}
+			if d.Camera.Password == "" {
+				problems = append(problems, prefix+": camera.password is required")
+			}
+		}
 	}
 	if len(problems) > 0 {
 		return fmt.Errorf("invalid config:\n  - %s", strings.Join(problems, "\n  - "))
@@ -463,6 +518,10 @@ func (d Device) HasBemfa() bool {
 
 func (d Device) HasBlinker() bool {
 	return d.IoT.Blinker.Enabled
+}
+
+func (d Device) HasCamera() bool {
+	return d.Type == DeviceTypeTPLinkCamera
 }
 
 func validMAC(mac string) bool {

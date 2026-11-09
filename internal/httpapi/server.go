@@ -71,6 +71,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/devices/{key}/wake", s.auth(s.handleWake))
 	mux.HandleFunc("POST /api/devices/{key}/shutdown", s.auth(s.handleShutdown))
 	mux.HandleFunc("POST /api/devices/{key}/probe", s.auth(s.handleProbe))
+	mux.HandleFunc("GET /api/devices/{key}/mask", s.auth(s.handleMaskStatus))
+	mux.HandleFunc("POST /api/devices/{key}/mask", s.auth(s.handleMaskSet))
 	mux.HandleFunc("GET /api/devices/{key}/ssh/hostkey", s.auth(s.handleHostKey))
 	mux.HandleFunc("POST /api/reload", s.auth(s.handleReload))
 	mux.HandleFunc("GET /api/config/status", s.handleConfigStatus)
@@ -216,6 +218,37 @@ func (s *Server) handleProbe(w http.ResponseWriter, r *http.Request) {
 	status, err := s.manager.Probe(r.PathValue("key"))
 	if err != nil {
 		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"device": status})
+}
+
+func (s *Server) handleMaskStatus(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+	status, err := s.manager.RefreshMask(key)
+	if err != nil {
+		s.log.Warn("camera mask status failed", "device", key, "error", err)
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"device": status})
+}
+
+func (s *Server) handleMaskSet(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+	var payload struct {
+		Masked *bool `json:"masked"`
+	}
+	body := http.MaxBytesReader(w, r.Body, 4096)
+	defer body.Close()
+	if err := json.NewDecoder(body).Decode(&payload); err != nil || payload.Masked == nil {
+		writeError(w, http.StatusBadRequest, "request body must be {\"masked\": true|false}")
+		return
+	}
+	status, err := s.manager.SetMask(key, *payload.Masked)
+	if err != nil {
+		s.log.Warn("camera mask update failed", "device", key, "error", err)
+		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"device": status})

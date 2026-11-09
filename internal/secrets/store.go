@@ -68,8 +68,13 @@ type ConfigPanelSecrets struct {
 }
 
 type DeviceSecrets struct {
-	SSH SSHSec     `yaml:"ssh,omitempty"`
-	IoT IoTSecrets `yaml:"iot,omitempty"`
+	SSH    SSHSec        `yaml:"ssh,omitempty"`
+	IoT    IoTSecrets    `yaml:"iot,omitempty"`
+	Camera CameraSecrets `yaml:"camera,omitempty"`
+}
+
+type CameraSecrets struct {
+	Password string `yaml:"password,omitempty"`
 }
 
 type SSHSec struct {
@@ -89,6 +94,7 @@ type DeviceStatus struct {
 	SSHPassphrase  bool `json:"ssh_passphrase"`
 	BemfaSecretKey bool `json:"bemfa_secret_key"`
 	BlinkerAuthKey bool `json:"blinker_auth_key"`
+	CameraPassword bool `json:"camera_password"`
 }
 
 type Status struct {
@@ -402,6 +408,7 @@ func (s *Store) ApplyToConfig(cfg *config.Config) {
 		cfg.Devices[i].SSH.Passphrase = deviceSecrets.SSH.Passphrase
 		cfg.Devices[i].IoT.Bemfa.SecretKey = deviceSecrets.IoT.BemfaSecretKey
 		cfg.Devices[i].IoT.Blinker.AuthKey = deviceSecrets.IoT.BlinkerAuthKey
+		cfg.Devices[i].Camera.Password = deviceSecrets.Camera.Password
 	}
 }
 
@@ -442,6 +449,9 @@ func (s *Store) ImportLegacy(cfg *config.Config) (bool, error) {
 		}
 		if device.IoT.Blinker.AuthKey != "" && entry.IoT.BlinkerAuthKey == "" {
 			entry.IoT.BlinkerAuthKey = device.IoT.Blinker.AuthKey
+		}
+		if device.Camera.Password != "" && entry.Camera.Password == "" {
+			entry.Camera.Password = device.Camera.Password
 		}
 		if !reflect.DeepEqual(before, entry) {
 			if s.file.Devices == nil {
@@ -484,6 +494,9 @@ func (s *Store) ReplaceRuntimeSecretsFromConfig(cfg *config.Config) {
 		}
 		if device.IoT.Blinker.AuthKey != "" {
 			entry.IoT.BlinkerAuthKey = device.IoT.Blinker.AuthKey
+		}
+		if device.Camera.Password != "" {
+			entry.Camera.Password = device.Camera.Password
 		}
 		if !reflect.DeepEqual(entry, DeviceSecrets{}) {
 			devices[ref] = entry
@@ -554,6 +567,7 @@ func (s *Store) Status(cfg *config.Config) Status {
 				SSHPassphrase:  device.SSH.Passphrase != "",
 				BemfaSecretKey: device.IoT.BemfaSecretKey != "",
 				BlinkerAuthKey: device.IoT.BlinkerAuthKey != "",
+				CameraPassword: device.Camera.Password != "",
 			}
 		}
 	}

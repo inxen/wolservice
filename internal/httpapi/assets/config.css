@@ -360,6 +360,9 @@ html { scroll-behavior: smooth; }
 .cfg-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 22px 24px 14px; }
 .cfg-modal-head h2 { margin: 0; font-size: 1.1rem; }
 .cfg-modal-head p { margin: 4px 0 0; color: var(--muted); font-size: 0.74rem; }
+.cfg-type-row { padding: 0 24px 10px; }
+.cfg-type-field { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+.cfg-type-select { width: auto; min-width: 260px; height: 38px; margin-top: 0; }
 .cfg-modal-head .modal-close { position: static; flex: 0 0 auto; }
 .cfg-tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--border); }
 .cfg-tab { padding: 9px 13px; color: var(--muted); font-size: 0.8rem; font-weight: 600; background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.16s ease, border-color 0.16s ease; }

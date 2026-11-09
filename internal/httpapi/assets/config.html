@@ -18,6 +18,7 @@
     <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/></symbol>
     <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.2.37.5.7.9.93.3.17.7.26 1.1.26H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.81Z"/></symbol>
     <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="m15.5 10 6-3v10l-6-3"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7M6.5 7l.8 13a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-13M10 11v6M14 11v6"/></symbol>
     <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
@@ -110,14 +111,14 @@
       <main class="cfg-main">
         <section class="cfg-section" id="section-devices" data-section="devices">
           <header class="cfg-section-head">
-            <div><h2>设备管理</h2><p>每台设备对应一组 MAC、广播地址和可选的 SSH / IoT 设置。</p></div>
+            <div><h2>设备管理</h2><p>先选择设备类型：计算机走 WOL / 探测 / SSH，TP-Link 摄像头只做镜头遮蔽；两者都可以接入 IoT。</p></div>
             <button class="btn primary" id="addDeviceButton" type="button"><svg class="btn-icon"><use href="#i-plus"/></svg>添加设备</button>
           </header>
           <div class="cfg-device-list" id="deviceList"></div>
           <div class="cfg-empty" id="deviceEmpty" hidden>
             <div class="state-icon"><svg><use href="#i-monitor"/></svg></div>
             <h3>还没有设备</h3>
-            <p>添加设备并保存后，快速面板会多一个电源开关。</p>
+            <p>添加设备并保存后，快速面板会多一个电源或镜头遮蔽开关。</p>
             <button class="btn primary" id="emptyAddDevice" type="button">添加第一台设备</button>
           </div>
         </section>
@@ -228,10 +229,18 @@
         <div><h2 id="deviceModalTitle">添加设备</h2><p id="deviceModalSub">填写设备信息后应用到列表，再点击保存。</p></div>
         <button class="modal-close" id="deviceModalClose" type="button" aria-label="关闭"><svg><use href="#i-x"/></svg></button>
       </header>
+      <div class="cfg-type-row">
+        <label class="cfg-type-field" for="dType"><span>设备类型</span>
+          <select id="dType" class="text-input cfg-type-select">
+            <option value="computer">计算机</option>
+            <option value="tplink-camera">TP-Link-camera(China)</option>
+          </select>
+        </label>
+      </div>
       <div class="cfg-tabs" id="deviceTabs" role="tablist">
         <button class="cfg-tab is-active" type="button" data-tab="basic">基础</button>
-        <button class="cfg-tab" type="button" data-tab="reach">探测</button>
-        <button class="cfg-tab" type="button" data-tab="ssh">SSH 关机</button>
+        <button class="cfg-tab" type="button" data-tab="reach" id="tabReach">探测</button>
+        <button class="cfg-tab" type="button" data-tab="ssh" id="tabSSH">SSH 关机</button>
         <button class="cfg-tab" type="button" data-tab="iot">IoT</button>
       </div>
       <div class="cfg-modal-body">
@@ -239,10 +248,19 @@
           <div class="cfg-grid">
             <label class="cfg-field"><span>设备名称</span><input id="dName" class="text-input" type="text" placeholder="例如：书房主机"></label>
             <label class="cfg-field"><span>设备标识 key <em>留空自动生成</em></span><input id="dKey" class="text-input" type="text" placeholder="study-pc"></label>
-            <label class="cfg-field cfg-span-2"><span>MAC 地址 <em>每行一个</em></span><textarea id="dMACs" class="text-input cfg-textarea" rows="3" placeholder="AA:BB:CC:DD:EE:FF"></textarea></label>
-            <label class="cfg-field cfg-span-2"><span>广播地址 <em>每行一个，留空自动检测</em></span><textarea id="dBroadcasts" class="text-input cfg-textarea" rows="2" placeholder="192.168.1.255"></textarea></label>
-            <label class="cfg-field"><span>WOL 端口</span><input id="dPort" class="text-input" type="number" min="1" max="65535" placeholder="9"></label>
-            <label class="cfg-field"><span>重复发送次数</span><input id="dRepeat" class="text-input" type="number" min="1" max="10" placeholder="5"></label>
+            <div class="cfg-grid cfg-span-2" id="basicComputerFields">
+              <label class="cfg-field cfg-span-2"><span>MAC 地址 <em>每行一个</em></span><textarea id="dMACs" class="text-input cfg-textarea" rows="3" placeholder="AA:BB:CC:DD:EE:FF"></textarea></label>
+              <label class="cfg-field cfg-span-2"><span>广播地址 <em>每行一个，留空自动检测</em></span><textarea id="dBroadcasts" class="text-input cfg-textarea" rows="2" placeholder="192.168.1.255"></textarea></label>
+              <label class="cfg-field"><span>WOL 端口</span><input id="dPort" class="text-input" type="number" min="1" max="65535" placeholder="9"></label>
+              <label class="cfg-field"><span>重复发送次数</span><input id="dRepeat" class="text-input" type="number" min="1" max="10" placeholder="5"></label>
+            </div>
+            <div class="cfg-grid cfg-span-2" id="basicCameraFields" hidden>
+              <label class="cfg-field"><span>摄像头主机</span><input id="dCameraHost" class="text-input" type="text" placeholder="192.168.1.20"></label>
+              <label class="cfg-field"><span>端口</span><input id="dCameraPort" class="text-input" type="number" min="1" max="65535" placeholder="80"></label>
+              <label class="cfg-field"><span>用户名</span><input id="dCameraUsername" class="text-input" type="text" placeholder="admin"></label>
+              <label class="cfg-field"><span>设备密码</span><input id="dCameraPassword" class="text-input cfg-secret" type="password" autocomplete="new-password" placeholder="TP-Link App 中设置的设备密码"></label>
+              <p class="cfg-note cfg-span-2">摄像头类型只使用本地镜头遮蔽接口：遮蔽 = 关闭画面，取消遮蔽 = 恢复画面。在线状态在打开面板读取遮蔽状态时同步获取，不做周期 ping 探测，也没有 SSH 关机。密码保存在加密 secrets 文件。</p>
+            </div>
           </div>
         </div>
         <div class="cfg-tab-panel" data-panel="reach" hidden>
@@ -268,7 +286,7 @@
             <label class="cfg-field cfg-span-2"><span>私钥内容 <em>PEM</em></span><textarea id="dSSHKey" class="text-input cfg-textarea cfg-secret" rows="3" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></label>
             <label class="cfg-field"><span>私钥口令</span><input id="dSSHPassphrase" class="text-input cfg-secret" type="password" autocomplete="off" placeholder="没有则留空"></label>
             <label class="cfg-field"><span>SSH 超时</span><input id="dSSHTimeout" class="text-input" type="text" placeholder="10s"></label>
-            <label class="cfg-check cfg-span-2"><input id="dClearSecrets" type="checkbox"><span>清除此设备已保存的密码、私钥、口令和 IoT 密钥</span></label>
+            <label class="cfg-check cfg-span-2"><input id="dClearSecrets" type="checkbox"><span>清除此设备已保存的密码、私钥、口令和 IoT / 摄像头密码</span></label>
             <small class="cfg-span-2">已有凭据不会回显。留空表示保持，填入新值会覆盖；要全部清除再重填，勾选上面的选项。</small>
             <label class="cfg-field cfg-span-2"><span>主机指纹 <em>SHA256</em></span><input id="dSSHHostKey" class="text-input" type="text" placeholder="SHA256:..."><small>点击“探测指纹”连接主机并获取；确认后自动填入。</small></label>
             <div class="cfg-field cfg-span-2 cfg-inline-action">

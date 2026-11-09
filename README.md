@@ -9,6 +9,7 @@
 - 魔法包唤醒，多 MAC、多广播地址，端口和重发次数可调
 - 在线探测，用系统 `ping` 或 TCP 连接
 - SSH 关机，密码或私钥登录并校验主机指纹；配了 SSH 唤醒命令时优先走 SSH
+- TP-Link 摄像头镜头遮蔽（本地接口，遮蔽/取消遮蔽）
 - 巴法云、点灯科技，能用小爱、天猫精灵、小度控制
 - 中文/英文、明暗主题，快速面板可以装到手机主屏幕
 
@@ -71,6 +72,8 @@ auth:
 | POST | `/api/devices/{key}/wake` | 唤醒 |
 | POST | `/api/devices/{key}/shutdown` | 关机 |
 | POST | `/api/devices/{key}/probe` | 立即探测一次 |
+| GET | `/api/devices/{key}/mask` | 读取镜头遮蔽状态 |
+| POST | `/api/devices/{key}/mask` | 设置镜头遮蔽，body `{"masked": true}` |
 | POST | `/api/reload` | 重载配置 |
 | GET/PUT | `/api/config` | 读取或保存配置（配置面板作用域） |
 
@@ -99,6 +102,17 @@ wol ALL=(root) NOPASSWD: /usr/local/sbin/wol-shutdown
 ```
 
 关机命令填 `sudo -n /usr/local/sbin/wol-shutdown`。配置面板里有现成的命令预设，Linux、Windows、macOS 的都有。
+
+## TP-Link 摄像头镜头遮蔽
+
+在 `/config` 添加或编辑设备时，把「设备类型」选为 `TP-Link-camera(China)`，再填摄像头 IP、端口（默认 80）、用户名（默认 `admin`）和 TP-Link App 里设置的设备密码。摄像头类型只保留「基础」和「IoT」两个页签，没有在线探测、WOL 开机和 SSH 关机；快速面板的设备卡片会用「镜头遮蔽」圆键替代电源开关。
+
+- 遮蔽 = 关闭摄像头画面，取消遮蔽 = 恢复画面。在线状态在打开或刷新面板读取遮蔽状态时同步获得，不做周期 ping 探测。
+- 走摄像头本地 HTTP 接口，不需要 TP-Link 云账号；摄像头设备可以不填 MAC。
+- 密码和 SSH 凭据一样保存在加密的 `wol.secrets.yaml`，不会写入主配置。
+- IoT（巴法云 / 点灯科技）下发 `on` 时取消遮蔽，`off` 时遮蔽。
+- 设备密码错误次数过多会触发摄像头锁定，改配置前请先确认密码；服务端对登录失败有 1 分钟退避。
+- 摄像头 80 端口不要映射到公网；整个协议是明文 HTTP，建议只放在可信内网。
 
 ## OpenWrt
 
@@ -146,7 +160,7 @@ WOL 靠二层广播，建议 `--network host`，Docker Desktop 在 Windows/macOS
 交叉编译：
 
 ```bash
-VERSION=0.6.6 bash build.sh
+VERSION=0.7.0 bash build.sh
 # dist/wol-windows-amd64.exe, wol-linux-arm64, wol-linux-mipsle, ...
 ```
 

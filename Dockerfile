@@ -5,7 +5,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-ARG VERSION=0.6.6
+ARG VERSION=0.7.0
 ARG WOL_EMBEDDED_KEY=""
 RUN CGO_ENABLED=0 go build -trimpath \
     -ldflags "-s -w -X wol/internal/version.Version=${VERSION} ${WOL_EMBEDDED_KEY:+-X wol/internal/secrets.EmbeddedKey=${WOL_EMBEDDED_KEY}}" \

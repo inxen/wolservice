@@ -300,3 +300,126 @@ auth:
 		t.Fatal("invalid trusted network should be rejected")
 	}
 }
+
+func TestCameraDeviceAllowsEmptyMACs(t *testing.T) {
+	path := writeConfig(t, `
+devices:
+  - key: "camera"
+    type: "tplink-camera"
+    name: "Camera"
+    macs: ["not-a-mac"]
+    broadcast_ips: ["not-an-ip"]
+    reachability:
+      enabled: true
+      targets: ["127.0.0.1"]
+    ssh:
+      enabled: true
+    camera:
+      host: " 192.0.2.11 "
+      password: "secret"
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	device := cfg.Devices[0]
+	if device.Type != DeviceTypeTPLinkCamera || !device.HasCamera() || !device.Camera.Enabled {
+		t.Fatalf("camera type = %q, enabled = %v", device.Type, device.Camera.Enabled)
+	}
+	if device.Reachability.Enabled || device.SSH.Enabled {
+		t.Fatalf("camera must not use reachability or ssh: %#v", device)
+	}
+	camera := device.Camera
+	if camera.Host != "192.0.2.11" {
+		t.Fatalf("camera.host = %q", camera.Host)
+	}
+	if camera.Port != 80 || camera.Username != "admin" {
+		t.Fatalf("camera defaults = %#v", camera)
+	}
+}
+
+func TestLegacyCameraEnabledInfersType(t *testing.T) {
+	path := writeConfig(t, `
+devices:
+  - key: "camera"
+    camera:
+      enabled: true
+      host: "192.0.2.11"
+      password: "secret"
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Devices[0].Type != DeviceTypeTPLinkCamera {
+		t.Fatalf("type = %q, want %q", cfg.Devices[0].Type, DeviceTypeTPLinkCamera)
+	}
+	if cfg.Devices[0].MACs == nil {
+		t.Fatal("macs should be normalized to an empty slice")
+	}
+}
+
+func TestComputerTypeDisablesCamera(t *testing.T) {
+	path := writeConfig(t, `
+devices:
+  - key: "pc"
+    type: "computer"
+    macs: ["01:02:03:04:05:06"]
+    camera:
+      enabled: true
+      host: "192.0.2.11"
+      password: "secret"
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Devices[0].HasCamera() || cfg.Devices[0].Camera.Enabled {
+		t.Fatal("computer device must not be treated as a camera")
+	}
+}
+
+func TestUnknownDeviceTypeRejected(t *testing.T) {
+	path := writeConfig(t, `
+devices:
+  - key: "pc"
+    type: "printer"
+    macs: ["01:02:03:04:05:06"]
+`)
+	if _, err := Load(path); err == nil {
+		t.Fatal("unknown device type should be rejected")
+	}
+}
+
+func TestCameraRequiresHostAndPassword(t *testing.T) {
+	cases := []string{
+		`
+devices:
+  - key: "camera"
+    type: "tplink-camera"
+    camera:
+      password: "secret"
+`,
+		`
+devices:
+  - key: "camera"
+    type: "tplink-camera"
+    camera:
+      host: "192.0.2.11"
+`,
+		`
+devices:
+  - key: "camera"
+    type: "tplink-camera"
+    camera:
+      host: "bad host"
+      password: "secret"
+`,
+	}
+	for _, content := range cases {
+		path := writeConfig(t, content)
+		if _, err := Load(path); err == nil {
+			t.Fatalf("config should be rejected:\n%s", content)
+		}
+	}
+}

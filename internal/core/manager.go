@@ -14,8 +14,11 @@ import (
 	"wol/internal/reach"
 	"wol/internal/secrets"
 	"wol/internal/sshpwr"
+	"wol/internal/tplink"
 	"wol/internal/wol"
 )
+
+const cameraStateTTL = 10 * time.Second
 
 type Manager struct {
 	log            *slog.Logger
@@ -48,6 +51,12 @@ type Device struct {
 	probing     bool
 	nextProbe   time.Time
 	actionMu    sync.Mutex
+
+	camera         *tplink.Client
+	maskState      string
+	maskError      string
+	maskCheckedAt  time.Time
+	maskRefreshing bool
 }
 
 func NewManager(log *slog.Logger, configPath string, cfg *config.Config) *Manager {
@@ -147,6 +156,18 @@ func (m *Manager) startSubsystems(ctx context.Context) {
 
 	iotManager := iot.NewManager(m.log.With("component", "iot"))
 	iotManager.Start(ctx, cfg.Devices, func(key string) iot.Actions {
+		if device, ok := m.Device(key); ok && device.cfg.HasCamera() {
+			return iot.Actions{
+				Wake: func() error {
+					_, err := m.SetMask(key, false)
+					return err
+				},
+				Shutdown: func() error {
+					_, err := m.SetMask(key, true)
+					return err
+				},
+			}
+		}
 		return iot.Actions{
 			Wake: func() error {
 				_, err := m.Wake(key)
@@ -350,6 +371,9 @@ func (m *Manager) probeLoop(ctx context.Context) {
 			return
 		case now := <-ticker.C:
 			for _, device := range m.deviceSnapshot() {
+				if device.cfg.HasCamera() {
+					continue
+				}
 				if !device.cfg.Reachability.Enabled || len(device.cfg.Reachability.Targets) == 0 {
 					continue
 				}
@@ -433,6 +457,9 @@ func (m *Manager) Probe(key string) (Status, error) {
 	if !ok {
 		return Status{}, fmt.Errorf("device %q not found", key)
 	}
+	if d.cfg.HasCamera() {
+		return m.statusOf(d), nil
+	}
 	if !d.cfg.Reachability.Enabled || len(d.cfg.Reachability.Targets) == 0 {
 		return m.statusOf(d), nil
 	}
@@ -452,6 +479,8 @@ func (m *Manager) Probe(key string) (Status, error) {
 }
 
 func (m *Manager) statusOf(d *Device) Status {
+	cfg := d.cfg
+
 	d.mu.RLock()
 	reachState := d.reachState
 	if reachState == "" {
@@ -459,9 +488,15 @@ func (m *Manager) statusOf(d *Device) Status {
 	}
 	probes := append([]reach.Probe(nil), d.reachProbes...)
 	lastProbe := d.lastProbe
+	maskState := d.maskState
+	maskError := d.maskError
+	maskRefreshDue := cfg.HasCamera() && !d.maskRefreshing &&
+		(d.maskCheckedAt.IsZero() || time.Since(d.maskCheckedAt) >= cameraStateTTL)
 	d.mu.RUnlock()
 
-	cfg := d.cfg
+	if maskRefreshDue {
+		go m.refreshCameraState(d)
+	}
 
 	// The wake action is intentionally always available: reachability can be
 	// stale, and users may need to resend a magic packet while the host is
@@ -493,6 +528,29 @@ func (m *Manager) statusOf(d *Device) Status {
 		ShutdownMode:        shutdownMode,
 		ReachabilityEnabled: cfg.Reachability.Enabled,
 	}
+	if cfg.HasCamera() {
+		status.CanWakeup = false
+		status.WakeMode = "none"
+		status.CanShutdown = false
+		status.ShutdownMode = "none"
+		status.ReachabilityEnabled = false
+		switch {
+		case maskError != "":
+			status.ReachabilityState = reach.StateUnreachable
+		case maskState == "on" || maskState == "off":
+			status.ReachabilityState = reach.StateReachable
+		default:
+			status.ReachabilityState = reach.StateUnknown
+		}
+		status.CameraEnabled = true
+		status.CameraHost = cfg.Camera.Host
+		status.CameraPort = cfg.Camera.Port
+		status.MaskState = maskState
+		if status.MaskState == "" {
+			status.MaskState = "unknown"
+		}
+		status.MaskError = maskError
+	}
 	if !lastProbe.IsZero() {
 		status.LastProbe = &lastProbe
 	}
@@ -520,6 +578,11 @@ type Status struct {
 	CanShutdown         bool             `json:"can_shutdown"`
 	WakeMode            string           `json:"wake_mode"`
 	ShutdownMode        string           `json:"shutdown_mode"`
+	CameraEnabled       bool             `json:"camera_enabled,omitempty"`
+	CameraHost          string           `json:"camera_host,omitempty"`
+	CameraPort          int              `json:"camera_port,omitempty"`
+	MaskState           string           `json:"mask_state,omitempty"`
+	MaskError           string           `json:"mask_error,omitempty"`
 	IoT                 iot.DeviceStatus `json:"iot,omitempty"`
 }
 
@@ -547,6 +610,9 @@ func (m *Manager) Wake(key string) (WakeResult, error) {
 	d.actionMu.Lock()
 	defer d.actionMu.Unlock()
 	cfg := d.cfg
+	if cfg.HasCamera() {
+		return WakeResult{}, fmt.Errorf("camera device %q does not support wake", key)
+	}
 	var result WakeResult
 	var warnings []string
 
@@ -592,6 +658,9 @@ func (m *Manager) Shutdown(key string) (ShutdownResult, error) {
 	d.actionMu.Lock()
 	defer d.actionMu.Unlock()
 	cfg := d.cfg
+	if cfg.HasCamera() {
+		return ShutdownResult{}, fmt.Errorf("camera device %q does not support shutdown", key)
+	}
 	var result ShutdownResult
 	var warnings []string
 
@@ -644,6 +713,101 @@ type HostKeyInfo struct {
 	Fingerprint string `json:"fingerprint"`
 	Configured  string `json:"configured,omitempty"`
 	Trusted     bool   `json:"trusted"`
+}
+
+func (m *Manager) cameraDevice(key string) (*Device, error) {
+	d, ok := m.Device(key)
+	if !ok {
+		return nil, fmt.Errorf("device %q not found", key)
+	}
+	if !d.cfg.HasCamera() {
+		return nil, fmt.Errorf("device %q does not have a camera configured", key)
+	}
+	return d, nil
+}
+
+func (d *Device) cameraClient() *tplink.Client {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.camera == nil {
+		cfg := d.cfg.Camera
+		d.camera = tplink.New(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
+	}
+	return d.camera
+}
+
+func (d *Device) applyMaskResult(masked bool, err error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.maskCheckedAt = time.Now()
+	if err != nil {
+		d.maskError = err.Error()
+		return
+	}
+	d.maskError = ""
+	if masked {
+		d.maskState = "on"
+	} else {
+		d.maskState = "off"
+	}
+}
+
+func (m *Manager) refreshCameraState(d *Device) {
+	d.mu.Lock()
+	if d.maskRefreshing {
+		d.mu.Unlock()
+		return
+	}
+	d.maskRefreshing = true
+	d.mu.Unlock()
+
+	ctx, cancel := context.WithTimeout(m.baseContext(), 15*time.Second)
+	masked, err := d.cameraClient().GetMask(ctx)
+	cancel()
+	d.applyMaskResult(masked, err)
+
+	d.mu.Lock()
+	d.maskRefreshing = false
+	d.mu.Unlock()
+}
+
+// SetMask enables or disables lens masking and returns the refreshed status.
+func (m *Manager) SetMask(key string, masked bool) (Status, error) {
+	d, err := m.cameraDevice(key)
+	if err != nil {
+		return Status{}, err
+	}
+	d.actionMu.Lock()
+	defer d.actionMu.Unlock()
+
+	ctx, cancel := context.WithTimeout(m.baseContext(), 15*time.Second)
+	err = d.cameraClient().SetMask(ctx, masked)
+	cancel()
+	if err != nil {
+		d.mu.Lock()
+		d.maskError = err.Error()
+		d.mu.Unlock()
+		return m.statusOf(d), err
+	}
+	d.applyMaskResult(masked, nil)
+	m.log.Info("camera lens mask updated", "device", key, "masked", masked)
+	return m.statusOf(d), nil
+}
+
+// RefreshMask reads the live lens mask state from the camera.
+func (m *Manager) RefreshMask(key string) (Status, error) {
+	d, err := m.cameraDevice(key)
+	if err != nil {
+		return Status{}, err
+	}
+	d.actionMu.Lock()
+	defer d.actionMu.Unlock()
+
+	ctx, cancel := context.WithTimeout(m.baseContext(), 15*time.Second)
+	masked, err := d.cameraClient().GetMask(ctx)
+	cancel()
+	d.applyMaskResult(masked, err)
+	return m.statusOf(d), err
 }
 
 func (m *Manager) baseContext() context.Context {

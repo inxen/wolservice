@@ -75,7 +75,8 @@ func hasLegacySecrets(cfg *config.Config) bool {
 	for i := range cfg.Devices {
 		device := cfg.Devices[i]
 		if device.SSH.Password != "" || device.SSH.PrivateKey != "" || device.SSH.Passphrase != "" ||
-			device.IoT.Bemfa.SecretKey != "" || device.IoT.Blinker.AuthKey != "" {
+			device.IoT.Bemfa.SecretKey != "" || device.IoT.Blinker.AuthKey != "" ||
+			device.Camera.Password != "" {
 			return true
 		}
 	}

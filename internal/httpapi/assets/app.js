@@ -55,7 +55,20 @@
       warning: "提示",
       close: "关闭",
       theme: "主题",
-      config: "配置"
+      config: "配置",
+      cameraAddress: "地址",
+      maskOn: "已遮蔽",
+      maskOff: "画面正常",
+      maskUnknown: "状态未知",
+      maskOnHint: "点击取消遮蔽",
+      maskOffHint: "点击遮蔽镜头",
+      maskUnknownHint: "点击读取状态",
+      maskBusy: "正在切换",
+      maskBusyHint: "请稍候…",
+      maskSetOn: "镜头已遮蔽",
+      maskSetOff: "已取消遮蔽",
+      maskErrorHint: "无法连接摄像头，点击重试",
+      maskFailed: "镜头遮蔽操作失败"
     },
     en: {
       stateOnline: "Online",
@@ -108,7 +121,20 @@
       warning: "Notice",
       close: "Close",
       theme: "Theme",
-      config: "Configuration"
+      config: "Configuration",
+      cameraAddress: "Address",
+      maskOn: "Masked",
+      maskOff: "Live view",
+      maskUnknown: "Unknown",
+      maskOnHint: "Click to unmask",
+      maskOffHint: "Click to mask the lens",
+      maskUnknownHint: "Click to read the state",
+      maskBusy: "Updating",
+      maskBusyHint: "Please wait…",
+      maskSetOn: "Lens masked",
+      maskSetOff: "Lens unmasked",
+      maskErrorHint: "Cannot reach the camera. Click to retry.",
+      maskFailed: "Could not update the lens mask"
     }
   };
 
@@ -117,6 +143,7 @@
     theme: localStorage.getItem("wolTheme") || "auto",
     devices: [],
     power: new Map(),
+    maskBusy: new Map(),
     localPower: new Map(),
     server: { title: "", version: "" },
     loaded: false,
@@ -243,11 +270,17 @@
 
   async function api(path, options) {
     var headers = { Accept: "application/json", "X-WOL-Config": "1" };
+    var body;
+    if (options && options.body) {
+      headers["Content-Type"] = "application/json";
+      body = options.body;
+    }
     var response = await fetch(path, {
       method: options && options.method ? options.method : "GET",
       credentials: "same-origin",
       cache: "no-store",
-      headers: headers
+      headers: headers,
+      body: body
     });
     var payload = null;
     try { payload = await response.json(); } catch (error) { payload = null; }
@@ -314,6 +347,30 @@
       case "offline": return t("stateOffline");
       default: return t("stateUnknown");
     }
+  }
+
+  function cameraTone(device) {
+    if (device.mask_error) return "offline";
+    if (device.mask_state === "on") return "masked";
+    if (device.mask_state === "off") return "online";
+    return "unknown";
+  }
+
+  function cameraBadgeLabel(device) {
+    if (device.mask_error) return t("stateOffline");
+    return maskLabel(device.mask_state);
+  }
+
+  function maskLabel(maskState) {
+    if (maskState === "on") return t("maskOn");
+    if (maskState === "off") return t("maskOff");
+    return t("maskUnknown");
+  }
+
+  function cameraAddress(device) {
+    var host = device.camera_host || "--";
+    var port = device.camera_port || 80;
+    return host + ":" + port;
   }
 
   function actualPowerState(device) {
@@ -407,37 +464,118 @@
     return area;
   }
 
+  function buildCameraArea(device) {
+    var busy = state.maskBusy.get(device.key) || false;
+    var maskState = device.mask_state || "unknown";
+    var offline = Boolean(device.mask_error);
+    var uiState = offline ? "unknown" : (maskState === "on" ? "masked" : (maskState === "off" ? "on" : "unknown"));
+    var area = el("div", "power-area camera-area" + (busy ? " loading" : ""));
+    var wrap = el("div", "power-wrap");
+    var button = el("button", "power-button camera-button state-" + uiState + (busy ? " is-loading" : ""));
+    button.type = "button";
+
+    var label, hint;
+    if (busy) {
+      label = t("maskBusy");
+      hint = t("maskBusyHint");
+      button.disabled = true;
+    } else if (offline) {
+      label = t("stateOffline");
+      hint = t("maskErrorHint");
+    } else if (maskState === "on") {
+      label = t("maskOn");
+      hint = t("maskOnHint");
+    } else if (maskState === "off") {
+      label = t("maskOff");
+      hint = t("maskOffHint");
+    } else {
+      label = t("maskUnknown");
+      hint = t("maskUnknownHint");
+    }
+
+    button.appendChild(icon(maskState === "on" ? "eye-off" : "eye"));
+    button.appendChild(el("span", "power-label", label));
+    button.appendChild(el("span", "power-hint", hint));
+    button.setAttribute("aria-label", label + " · " + hint);
+    button.addEventListener("click", function () { onMaskClick(device); });
+    wrap.appendChild(button);
+    area.appendChild(wrap);
+    return area;
+  }
+
+  async function onMaskClick(device) {
+    var key = device.key;
+    if (state.maskBusy.get(key)) return;
+    var current = device.mask_state;
+    state.maskBusy.set(key, true);
+    render();
+
+    var changed = false;
+    try {
+      var data;
+      if (!device.mask_error && (current === "on" || current === "off")) {
+        var target = current !== "on";
+        data = await api("/api/devices/" + encodeURIComponent(key) + "/mask", {
+          method: "POST",
+          body: JSON.stringify({ masked: target })
+        });
+        if (data.device) updateDevice(data.device);
+        changed = true;
+        showToast(target ? t("maskSetOn") : t("maskSetOff"), "success");
+      } else {
+        data = await api("/api/devices/" + encodeURIComponent(key) + "/mask");
+        if (data.device) updateDevice(data.device);
+        changed = true;
+      }
+    } catch (error) {
+      if (!error.unauthorized) showToast(error.message || t("maskFailed"), "error", 5200);
+    } finally {
+      state.maskBusy.delete(key);
+      render();
+      if (changed) load(false);
+    }
+  }
+
   function createDeviceCard(device) {
+    var camera = Boolean(device.camera_enabled);
     var power = state.power.get(device.key) || null;
     var current = power ? power.from : powerStateOf(device);
     var tone = deviceTone(device);
+    if (camera) tone = cameraTone(device);
     var card = el("article", "device-card tone-" + tone + (power ? " is-power-busy" : ""));
     card.dataset.deviceKey = device.key;
 
     var top = el("div", "card-top");
     var iconBox = el("div", "device-icon");
-    iconBox.appendChild(icon(tone === "offline" ? "wifi-off" : "monitor"));
+    iconBox.appendChild(icon(camera ? "camera" : (tone === "offline" ? "wifi-off" : "monitor")));
     top.appendChild(iconBox);
 
     var titleWrap = el("div", "device-title");
     titleWrap.appendChild(el("h3", null, device.name || device.key));
 
-    var macLine = el("p", "device-sub");
-    macLine.appendChild(el("span", "device-sub-label", t("mac")));
-    macLine.appendChild(el("span", "device-sub-value mono", listSummary(device.macs, "--")));
-    titleWrap.appendChild(macLine);
+    if (camera) {
+      var addressLine = el("p", "device-sub");
+      addressLine.appendChild(el("span", "device-sub-label", t("cameraAddress")));
+      addressLine.appendChild(el("span", "device-sub-value mono", cameraAddress(device)));
+      titleWrap.appendChild(addressLine);
+    } else {
+      var macLine = el("p", "device-sub");
+      macLine.appendChild(el("span", "device-sub-label", t("mac")));
+      macLine.appendChild(el("span", "device-sub-value mono", listSummary(device.macs, "--")));
+      titleWrap.appendChild(macLine);
 
-    var broadcastLine = el("p", "device-sub");
-    broadcastLine.appendChild(el("span", "device-sub-label", t("broadcast")));
-    broadcastLine.appendChild(el("span", "device-sub-value", listSummary(device.broadcast_ips, t("autoBroadcast"))));
-    titleWrap.appendChild(broadcastLine);
+      var broadcastLine = el("p", "device-sub");
+      broadcastLine.appendChild(el("span", "device-sub-label", t("broadcast")));
+      broadcastLine.appendChild(el("span", "device-sub-value", listSummary(device.broadcast_ips, t("autoBroadcast"))));
+      titleWrap.appendChild(broadcastLine);
+    }
 
     top.appendChild(titleWrap);
-    top.appendChild(el("span", "badge", toneLabel(tone)));
+    var badgeText = camera ? cameraBadgeLabel(device) : toneLabel(tone);
+    top.appendChild(el("span", "badge", badgeText));
 
     card.appendChild(top);
-
-    card.appendChild(buildPowerArea(device, power, current));
+    card.appendChild(camera ? buildCameraArea(device) : buildPowerArea(device, power, current));
 
     return card;
   }
@@ -471,6 +609,10 @@
       state.power.forEach(function (value, key) {
         if (!knownKeys.has(key))
           state.power.delete(key);
+      });
+      state.maskBusy.forEach(function (value, key) {
+        if (!knownKeys.has(key))
+          state.maskBusy.delete(key);
       });
       state.server = data.server || state.server;
       state.loaded = true;

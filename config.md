@@ -167,15 +167,17 @@ devices
 | 字段 | 类型 | 默认 | 必填 | 说明 |
 | --- | --- | --- | --- | --- |
 | `key` | string | 自动生成 | 建议显式设置 | 设备唯一标识，用于 API 路径；不能包含 `/`、`?`、`#` |
+| `type` | string | `"computer"` | 否 | 设备类型：`computer`（WOL / 探测 / SSH）或 `tplink-camera`（TP-Link 镜头遮蔽） |
 | `secret_ref` | string | 同 `key` | 否 | 凭据分组引用；默认使用 `key`，不同设备不能重复 |
 | `name` | string | 同 `key` | 否 | 面板显示名 |
-| `macs` | string[] | — | **是** | MAC 列表；支持 `:` 或 `-` 分隔，自动转为大写冒号格式 |
+| `macs` | string[] | — | 是 | MAC 列表；支持 `:` 或 `-` 分隔，自动转为大写冒号格式。`tplink-camera` 类型可留空 |
 | `broadcast_ips` | string[] | `[]` | 否 | 魔法包广播地址；留空自动枚举本机所有活动 IPv4 网卡的定向广播地址，只接受 IPv4 |
 | `port` | int | `9` | 否 | WOL UDP 端口；非法值回落 `9` |
 | `repeat` | int | `5` | 否 | 每个 MAC × 广播地址的发送次数；合法范围 1–10，越界回落 `5` |
 | `reachability` | object | — | 否 | 在线探测，见下文 |
 | `ssh` | object | — | 否 | SSH 唤醒/关机，见下文 |
 | `iot` | object | — | 否 | 语音助手接入，见下文 |
+| `camera` | object | — | 否 | TP-Link 摄像头镜头遮蔽，见下文 |
 
 `key` 生成规则（不显式设置时）：
 
@@ -266,6 +268,25 @@ echo '你的sudo密码' | sudo -S systemctl poweroff
 
 `sudo -S` 从标准输入读取密码，适合临时使用；密码会出现在命令行进程参数和 YAML 配置中，长期运行建议改用 NOPASSWD 或辅助脚本。
 
+### camera（TP-Link 摄像头）
+
+设备 `type: "tplink-camera"` 时启用，通过 TP-Link IPC 的本地 HTTP 接口控制「镜头遮蔽」。摄像头类型不需要 MAC，会自动关闭 `reachability` 和 `ssh`，也没有 WOL 开机/关机动作；配置面板只显示「基础」和「IoT」页签。快速面板的卡片用镜头遮蔽圆键替代电源开关；镜头遮蔽状态 `on` 表示画面被遮挡，`off` 表示正常出画面。
+
+| 字段 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `host` | string | — | 摄像头 IP 或域名；必填 |
+| `port` | int | `80` | 摄像头 HTTP 端口；非法值回落 `80` |
+| `username` | string | `"admin"` | 登录用户名；留空回落 `admin` |
+| `password` | string | `""` | 设备密码（TP-Link App 中设置）；必填，保存在密钥文件 |
+
+- 旧配置里的 `camera.enabled: true` 且没有 `type` 时，会自动推导为 `type: "tplink-camera"`，兼容早期写法。
+- 使用 type 3 登录（`md5(密码:nonce)`），不需要 TP-Link 云账号；登录会话（`stok`）会复用，过期自动重登一次；登录失败会退避 1 分钟，避免触发摄像头锁定。
+- 视觉语义：**遮蔽 = 关闭摄像头画面，取消遮蔽 = 恢复画面**。
+- **在线状态不做周期探测**：只有打开或刷新快速面板、读取设备状态时才向摄像头读取遮蔽状态；读到状态视为在线，读取失败视为离线。
+- IoT（巴法云 / 点灯科技）下发 `on` 执行「取消遮蔽」，`off` 执行「遮蔽」。
+- 只接受 IPv4/IPv6 地址或主机名；设备密码错误次数过多会触发摄像头锁定，不要用错误密码反复试探。
+- 协议为明文 HTTP，`stok` 可被同网段嗅探；只建议部署在可信内网，不要把摄像头端口映射到公网。
+
 ### iot.bemfa（巴法云）
 
 | 字段 | 类型 | 默认 | 说明 |
@@ -276,7 +297,7 @@ echo '你的sudo密码' | sudo -S systemctl poweroff
 
 - 相同 `secret_key` 的多个设备共用一个 MQTT 连接（按私钥分组），每个设备使用不同 `topic`。
 - Broker 固定为 `mqtts://bemfa.com:9503`（TLS 1.2），无需额外配置。
-- 收到 `on` / `true` 执行唤醒，`off` / `false` 执行关机；状态同时回写到 `<topic>/up`（retained）。
+- 收到 `on` / `true` 执行唤醒，`off` / `false` 执行关机；摄像头设备则映射为取消遮蔽 / 遮蔽。状态同时回写到 `<topic>/up`（retained）。
 - 连接断开后 5 秒重连；连接失败后 10 秒重试。
 - 面板显示状态：`未启用`、`连接中`、`已连接`、`重连中`、`连接失败: ...`。
 
@@ -291,17 +312,20 @@ echo '你的sudo密码' | sudo -S systemctl poweroff
 - 启动后向 `iot.diandeng.tech` 获取设备信息，并同步小爱（MIOT）、天猫精灵（AliGenie）、小度（DuerOS）的语音助手类型。
 - `device_type` 会转小写；配置校验不限制取值，但非上述值时 MIOT/AliGenie 可能无法识别，DuerOS 会回退为 `SOCKET`。
 - MQTT 心跳周期 599 秒；断线重连从 5 秒开始指数退避，上限 60 秒。
-- 语音/App 下发 `on` 执行唤醒，`off` 执行关机。
+- 语音/App 下发 `on` 执行唤醒，`off` 执行关机；摄像头设备则映射为取消遮蔽 / 遮蔽。
 
 ## 校验规则速查
 
 启动或 `-check` 时会对以下条件报错：
 
 - `server.listen` 必须能被解析为端口或 `host:port`；纯数字会自动补 `:`；端口必须是 0–65535 的数字；`tls_cert` 与 `tls_key` 必须同时设置或同时留空。
-- 每个设备 `macs` 不能为空且必须合法；`broadcast_ips` 必须是 IPv4；`key` 不能包含 `/`、`?`、`#`。
+- 每个设备 `type` 只能是 `computer` 或 `tplink-camera`。
+- `computer` 类型：`macs` 不能为空且必须合法；`broadcast_ips` 必须是 IPv4；`key` 不能包含 `/`、`?`、`#`。
+- `tplink-camera` 类型：不需要 MAC；`camera.host` 必填且必须是合法 IP/域名；密钥文件中的 `camera.password` 必填；`reachability` 和 `ssh` 会被忽略并强制关闭。
 - `secret_ref` 默认等于 `key`，同一 `secret_ref` 不能被多个设备复用。
-- `reachability.enabled: true` 时 `targets` 不能为空、目标必须合法、`method` 必须是 `ping`/`tcp`/`auto`；`method: tcp` 时 `tcp_port` 必须在 1–65535。
-- `ssh.enabled: true` 时：`host`、`user` 必填；密码/私钥至少一种；`shutdown_command`/`wake_command` 至少一个；`host_key` 必填（除非 `allow_unknown_host_key: true`）。
+- `reachability.enabled: true` 时 `targets` 不能为空、目标必须合法、`method` 必须是 `ping`/`tcp`/`auto`；`method: tcp` 时 `tcp_port` 必须在 1–65535。摄像头类型不使用探测。
+- `ssh.enabled: true` 时：`host`、`user` 必填；密码/私钥至少一种；`shutdown_command`/`wake_command` 至少一个；`host_key` 必填（除非 `allow_unknown_host_key: true`）。摄像头类型没有 SSH。
+- `camera.host` / `camera.password` 仅对 `tplink-camera` 类型校验；`camera.enabled` 由 `type` 推导，配置面板会自动设置。
 - `iot.bemfa.enabled: true` 时：密钥文件中的 `secret_key`、主配置中的 `topic` 必填；`topic` 必须以 `001` 结尾且不能与其他设备重复。
 - `iot.blinker.enabled: true` 时：密钥文件中的 `auth_key` 必填且不能与其他设备重复。
 - `auth.trusted_networks` 中每一项必须是合法的 IPv4/IPv6 地址或 CIDR；`trusted_networks_enabled: true` 时列表不能为空。
@@ -321,6 +345,7 @@ echo '你的sudo密码' | sudo -S systemctl poweroff
 | [`internal/wol/magic.go`](internal/wol/magic.go) | 魔法包、自动广播地址检测 |
 | [`internal/reach/reach.go`](internal/reach/reach.go) | ping/TCP 探测与聚合状态 |
 | [`internal/sshpwr/ssh.go`](internal/sshpwr/ssh.go) | SSH 认证、主机指纹、命令执行 |
+| [`internal/tplink/`](internal/tplink) | TP-Link 摄像头本地 API、镜头遮蔽 |
 | [`internal/iot/`](internal/iot) | 巴法云、点灯科技接入 |
 | [`cmd/wol/main.go`](cmd/wol/main.go) | 启动参数、HTTP 服务器、配置监听与信号处理 |
 

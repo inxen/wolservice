@@ -19,6 +19,8 @@
   --accent-soft: rgba(109, 106, 240, 0.11);
   --red: #dc2626;
   --red-soft: rgba(220, 38, 38, 0.1);
+  --green: #16a34a;
+  --green-soft: rgba(22, 163, 74, 0.12);
   --amber: #d97706;
   --amber-soft: rgba(217, 119, 6, 0.12);
   --blue: #0284c7;
@@ -53,6 +55,8 @@
   --accent-soft: rgba(165, 166, 255, 0.12);
   --red: #f87171;
   --red-soft: rgba(248, 113, 113, 0.12);
+  --green: #4ade80;
+  --green-soft: rgba(74, 222, 128, 0.12);
   --amber: #fbbf24;
   --amber-soft: rgba(251, 191, 36, 0.12);
   --blue: #38bdf8;
@@ -84,6 +88,8 @@
     --accent-soft: rgba(165, 166, 255, 0.12);
     --red: #f87171;
     --red-soft: rgba(248, 113, 113, 0.12);
+    --green: #4ade80;
+    --green-soft: rgba(74, 222, 128, 0.12);
     --amber: #fbbf24;
     --amber-soft: rgba(251, 191, 36, 0.12);
     --blue: #38bdf8;
@@ -217,6 +223,7 @@ a.icon-btn { text-decoration: none; }
 .device-card.tone-online { --card-accent: var(--accent); }
 .device-card.tone-partial { --card-accent: var(--blue); }
 .device-card.tone-offline { --card-accent: var(--muted); }
+.device-card.tone-masked { --card-accent: var(--amber); }
 .device-card.tone-conflict { --card-accent: var(--amber); }
 .device-card.tone-unknown { --card-accent: var(--muted-2); }
 
@@ -341,6 +348,17 @@ a.icon-btn { text-decoration: none; }
   box-shadow:
     0 0 0 8px color-mix(in srgb, var(--muted) 5%, transparent),
     inset 0 2px 18px rgba(255, 255, 255, 0.05);
+}
+.power-button.state-masked {
+  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+  background: radial-gradient(circle at 50% 40%,
+    color-mix(in srgb, var(--amber) 16%, var(--surface-strong)),
+    color-mix(in srgb, var(--amber) 4%, var(--surface-soft)) 72%);
+  color: var(--amber);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--amber) 7%, transparent),
+    0 0 34px color-mix(in srgb, var(--amber) 16%, transparent),
+    inset 0 2px 18px rgba(255, 255, 255, 0.06);
 }
 .power-button svg {
   width: 42px;
